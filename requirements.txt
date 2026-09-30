@@ -1,0 +1,10 @@
+streamlit
+pandas
+openpyxl
+python-dotenv
+sqlparse
+databricks-sql-connector
+requests
+scikit-learn
+numpy
+pytest

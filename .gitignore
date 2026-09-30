@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# Environment secrets
+.env
+*.env
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Local databases and logs
+*.db
+*.sqlite
+*.log
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Generated outputs
+outputs/
+reports/
+.cache/
+
+# Keep Excel source data, but ignore temporary Excel lock files
+~$*.xlsx
+
