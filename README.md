@@ -33,8 +33,6 @@ p.source_account_nbr = m.ACCTNO
 
 This project uses a local `.env` file for personal project-specific secrets.
 
-Do not commit `.env` to GitHub.
-
 Use `.env.example` as the safe template.
 
 ## Planned Flow
@@ -63,6 +61,7 @@ User question
 8. SQL safety and reliability checks
 9. Streamlit website
 10. Evaluation, hosting, and future improvements
+<<<<<<< HEAD
 
 User question
       ↓
@@ -109,3 +108,5 @@ final answer
 Streamlit website
       ↓
 show answer + SQL + result + status
+=======
+>>>>>>> ab6124d957864fd9800cdebd30e8fce6121f84a6
