@@ -33,8 +33,6 @@ p.source_account_nbr = m.ACCTNO
 
 This project uses a local `.env` file for personal project-specific secrets.
 
-Do not commit `.env` to GitHub.
-
 Use `.env.example` as the safe template.
 
 ## Planned Flow
