@@ -33,6 +33,7 @@ I want to see our accounts grouped by how long they've been open — like under 
 
 ```sql
 p.source_account_nbr = m.ACCTNO
+```
 
 ### Expected SQL
 
@@ -136,6 +137,7 @@ For each account type and customer segment, I want to see how many accounts we h
 
 ```sql
 p.source_account_nbr = m.ACCTNO
+```
 
 ### Expected SQL
 

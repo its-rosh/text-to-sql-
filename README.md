@@ -63,3 +63,49 @@ User question
 8. SQL safety and reliability checks
 9. Streamlit website
 10. Evaluation, hosting, and future improvements
+
+User question
+      ↓
+Streamlit website
+      ↓
+Question Router
+      ↓
+decide relevant table/domain
+      ↓
+embed user question
+      ↓
+ChromaDB
+      ↓
+retrieve RAG context
+      ↓
+Evidence Gate
+      ↓
+check if context is enough
+      ↓
+build LLM prompt
+      ↓
+Free / private LLM
+      ↓
+generate proposed Databricks SQL
+      ↓
+SQL Safety Checker
+      ↓
+check SELECT-only SQL
+      ↓
+SQL Reliability Checker
+      ↓
+check table, column, metric, join, grouping
+      ↓
+Databricks SQL Warehouse
+      ↓
+run approved query
+      ↓
+SQL result table
+      ↓
+Answer Generator
+      ↓
+final answer
+      ↓
+Streamlit website
+      ↓
+show answer + SQL + result + status
