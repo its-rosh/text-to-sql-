@@ -1,3 +1,6 @@
+"""This script will create simple text chunks for RAG.
+Later, ChromaDB will store these chunks as searchable knowledge."""
+
 from pathlib import Path
 
 import pandas as pd
