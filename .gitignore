@@ -33,3 +33,6 @@ reports/
 # Keep Excel source data, but ignore temporary Excel lock files
 ~$*.xlsx
 
+output/
+tmp/
+*.pdf
