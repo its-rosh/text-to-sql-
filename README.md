@@ -110,3 +110,24 @@ Streamlit website
 show answer + SQL + result + status
 =======
 >>>>>>> ab6124d957864fd9800cdebd30e8fce6121f84a6
+
+## Future File Upload Plan
+
+For the first version, files will be added manually into the `data/` folder and processed by the local data ingestion pipeline.
+
+Current flow:
+
+```text
+Excel file in data/
+      ↓
+file registry script
+      ↓
+inspect sheets, columns, row count
+      ↓
+prepare metadata
+      ↓
+load into Databricks
+      ↓
+create RAG chunks
+      ↓
+store embeddings in ChromaDB
