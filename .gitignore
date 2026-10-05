@@ -36,3 +36,5 @@ reports/
 output/
 tmp/
 *.pdf
+
+.chroma/
