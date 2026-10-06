@@ -53,6 +53,9 @@ def has_only_one_statement(sql: str) -> bool:
 
     return len(statements) <= 1
 
+def uses_select_star(normalized_sql: str) -> bool:
+    return "select *" in normalized_sql
+
 
 def uses_approved_table(normalized_sql: str) -> bool:
     for table in APPROVED_TABLES:
@@ -87,6 +90,11 @@ def check_sql_safety(sql: str) -> dict:
         return {
             "decision": "BLOCK",
             "reason": "SQL does not use an approved project table.",
+        }
+    if uses_select_star(normalized_sql):
+        return {
+            "decision": "BLOCK",
+            "reason": "SQL must not use SELECT *.",
         }
 
     return {
