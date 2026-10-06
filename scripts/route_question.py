@@ -47,7 +47,7 @@ OUT_OF_SCOPE_KEYWORDS = [
     "news",
 ]
 
-
+#counting how many words appear in the question 
 def count_keyword_matches(question: str, keywords: list[str]) -> int:
     normalized_question = question.lower()
 
