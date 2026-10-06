@@ -7,13 +7,9 @@ Search the local ChromaDB vector store for the best RAG context.
 Input:
 - User question
 - .chroma/ vector database
-
 Output:
 - Top matching metadata chunks
 - Distance score for each match
-
-Run:
-python scripts/search_chroma_vector_store.py "Show total MAB by income segment"
 """
 
 from pathlib import Path

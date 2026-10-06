@@ -1,25 +1,9 @@
 """
-Step 5: Search RAG Metadata
-
-Purpose:
-Search the RAG metadata and return the most relevant context chunks
-for a user's question.
-
-Why this file exists:
-Before using ChromaDB, this script helps us understand the basic idea
-of retrieval. It reads reports/rag_metadata.txt, splits it into chunks,
-compares the user's question with each chunk, and prints the best matches.
-
-Input:
-- User question from the terminal
-- reports/rag_metadata.txt
-
-Output:
-- Top matching metadata chunks
-- Similarity score for each chunk
-
-Example:
-python scripts/search_rag_metadata.py "Show total MAB by income segment"
+Step 8: Check RAG Evidence
+Purpose: Decide if retrieved ChromaDB context is strong enough to answer.
+Input: User question and .chroma/ vector database.
+Output: ALLOW with context, or BLOCK with "Not under my knowledge."
+Run: python scripts/check_rag_evidence.py "Show total MAB by income segment"
 """
 
 from pathlib import Path
