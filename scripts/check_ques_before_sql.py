@@ -25,7 +25,18 @@ def run_pre_sql_checks(question: str) -> dict:
             "retrieved_context": [],
         }
 
-    rag_results = retrieve_context(question)
+    enhanced_question = question
+
+    if route_result["route"] == "both_tables":
+        enhanced_question = question + " p2c mab_meb source_account_nbr ACCTNO dormancy_status mab_bal meb_bal join"
+    
+    elif route_result["route"] == "p2c":
+        enhanced_question = question + " p2c ucic source_account_nbr dormancy_status product_type account_open_date account_close_date"
+    
+    elif route_result["route"] == "mab_meb":
+        enhanced_question = question + " mab_meb ACCTNO mab_bal meb_bal final_segment income_segment balance"
+    
+    rag_results = retrieve_context(enhanced_question)
     is_evidence_allowed, evidence_reason = decide_if_evidence_is_enough(rag_results)
 
     if not is_evidence_allowed:
