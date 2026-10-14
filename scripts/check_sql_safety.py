@@ -27,6 +27,8 @@ APPROVED_TABLES = [
     "mab_meb",
     "cdp_uat.dsag_new.p2c",
     "cdp_uat.dsag_new.mab_meb",
+    "workspace.default.p2c",
+    "workspace.default.mab_meb",
 ]
 
 
