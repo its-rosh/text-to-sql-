@@ -7,7 +7,8 @@ Run: python scripts/check_sql_reliability.py "Show total MAB by income segment" 
 """
 
 import sys
-
+import sqlglot
+from sqlglot import exp
 
 QUESTION_TO_SQL_RULES = [
     {
@@ -46,7 +47,8 @@ QUESTION_TO_SQL_RULES = [
         "reason": "Question asks by product type, so SQL should use product_type.",
     },
     {
-        "question_terms": ["dormant", "dormancy"],
+        "question_terms": [],
+        "question_any_terms": ["dormant", "dormancy"],
         "required_sql_terms": ["dormancy_status"],
         "reason": "Question asks about dormancy, so SQL should use dormancy_status.",
     },
@@ -64,22 +66,55 @@ def all_terms_present(text: str, terms: list[str]) -> bool:
 
     return True
 
+def has_required_calculation(sql_text: str, terms: list[str]) -> bool:
+    function_types = {"sum": exp.Sum, "avg": exp.Avg}
+    function_type = function_types.get(terms[0])
 
+    if function_type is None:
+        return all_terms_present(normalize_text(sql_text), terms)
+
+    try:
+        query = sqlglot.parse_one(sql_text, read="databricks")
+
+        if query is None:
+            return False
+
+        for calculation in query.find_all(function_type):
+            column = calculation.this
+
+            if isinstance(column, exp.Column):
+                if column.name.lower() == terms[1]:
+                    return True
+
+        return False
+
+    except sqlglot.errors.SqlglotError:
+        return False
+    
 def check_sql_reliability(question: str, sql: str) -> dict:
     normalized_question = normalize_text(question)
     normalized_sql = normalize_text(sql)
 
     review_reasons = []
+    matched_rules = 0
 
     for rule in QUESTION_TO_SQL_RULES:
         question_matches_rule = all_terms_present(
             normalized_question,
             rule["question_terms"],
         )
+        alternative_terms = rule.get("question_any_terms", [])
+
+        if alternative_terms:
+            question_matches_rule = question_matches_rule and any(
+                term in normalized_question
+                for term in alternative_terms
+            )
 
         if question_matches_rule:
-            sql_has_required_terms = all_terms_present(
-                normalized_sql,
+            matched_rules += 1
+            sql_has_required_terms = has_required_calculation(
+                sql,
                 rule["required_sql_terms"],
             )
 
@@ -90,6 +125,12 @@ def check_sql_reliability(question: str, sql: str) -> dict:
         return {
             "decision": "REVIEW",
             "reason": " ".join(review_reasons),
+        }
+
+    if matched_rules == 0:
+        return {
+            "decision": "REVIEW",
+            "reason": "No reliability rule covers this question.",
         }
 
     return {

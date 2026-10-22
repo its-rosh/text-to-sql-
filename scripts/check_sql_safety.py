@@ -1,119 +1,94 @@
 """
-Step 11: Check SQL Safety
-Purpose: Allow only read-only SELECT SQL before database execution.
-Input: SQL text from terminal.
-Output: ALLOW or BLOCK with reason.
-Run: python scripts/check_sql_safety.py "SELECT * FROM p2c"
+Step 11: Check SQL Safety.
+Purpose: Check query structure, approved tables, and wildcard columns.
+Input: SQL text passed through the terminal.
+Output: ALLOW or BLOCK with a reason.
+Run: python scripts/check_sql_safety.py "SELECT product_type FROM workspace.default.p2c"
 """
 
 import sys
 
-
-BLOCKED_KEYWORDS = [
-    "insert",
-    "update",
-    "delete",
-    "drop",
-    "alter",
-    "create",
-    "truncate",
-    "merge",
-    "replace",
-]
+import sqlglot
+from sqlglot import exp
+from sqlglot.optimizer.scope import traverse_scope
 
 
-APPROVED_TABLES = [
-    "p2c",
-    "mab_meb",
-    "cdp_uat.dsag_new.p2c",
-    "cdp_uat.dsag_new.mab_meb",
+APPROVED_TABLES = {
     "workspace.default.p2c",
     "workspace.default.mab_meb",
-]
+}
 
 
-def normalize_sql(sql: str) -> str:
-    return " ".join(sql.lower().split())
+def check_sql_safety(sql_text: str) -> dict:
+    def block(reason: str) -> dict:
+        return {"decision": "BLOCK", "reason": reason}
 
+    try:
+        # Parse SQL into a structure instead of checking text fragments.
+        statements = sqlglot.parse(sql_text, read="databricks")
 
-def starts_with_allowed_keyword(normalized_sql: str) -> bool:
-    return normalized_sql.startswith("select ") or normalized_sql.startswith("with ")
+        if len(statements) != 1 or statements[0] is None:
+            return block("Provide exactly one SQL statement.")
 
+        query = statements[0]
 
-def has_blocked_keyword(normalized_sql: str) -> bool:
-    words = normalized_sql.replace(";", " ").split()
+        # A SELECT with WITH clauses also has a Select root.
+        if not isinstance(query, exp.Select):
+            return block("Only SELECT queries are allowed.")
 
-    for keyword in BLOCKED_KEYWORDS:
-        if keyword in words:
-            return True
+        for node in query.walk():
+            if isinstance(node, (exp.DDL, exp.DML, exp.Command, exp.Into)):
+                return block("Database-changing SQL is not allowed.")
 
-    return False
+        for select in query.find_all(exp.Select):
+            for column in select.expressions:
+                if column.is_star:
+                    return block("SELECT * and table.* are not allowed.")
 
+        found_table = False
 
-def has_only_one_statement(sql: str) -> bool:
-    statements = [part.strip() for part in sql.split(";") if part.strip()]
+        # Scopes distinguish actual database tables from CTE references.
+        for scope in traverse_scope(query):
+            for _, source in scope.selected_sources.values():
+                if not isinstance(source, exp.Table):
+                    continue
 
-    return len(statements) <= 1
+                if not all(
+                    isinstance(part, exp.Identifier)
+                    for part in source.parts
+                ):
+                    return block("Only explicitly named tables are allowed.")
 
-def uses_select_star(normalized_sql: str) -> bool:
-    return "select *" in normalized_sql
+                table_name = ".".join(
+                    part.name for part in source.parts
+                ).lower()
 
+                if table_name not in APPROVED_TABLES:
+                    return block(f"Table is not approved: {table_name}")
 
-def uses_approved_table(normalized_sql: str) -> bool:
-    for table in APPROVED_TABLES:
-        if table.lower() in normalized_sql:
-            return True
+                found_table = True
 
-    return False
+        if not found_table:
+            return block("Query must use an approved project table.")
 
-
-def check_sql_safety(sql: str) -> dict:
-    normalized_sql = normalize_sql(sql)
-
-    if not has_only_one_statement(sql):
-        return {
-            "decision": "BLOCK",
-            "reason": "SQL contains more than one statement.",
-        }
-
-    if not starts_with_allowed_keyword(normalized_sql):
-        return {
-            "decision": "BLOCK",
-            "reason": "SQL must start with SELECT or WITH.",
-        }
-
-    if has_blocked_keyword(normalized_sql):
-        return {
-            "decision": "BLOCK",
-            "reason": "SQL contains a blocked keyword.",
-        }
-
-    if not uses_approved_table(normalized_sql):
-        return {
-            "decision": "BLOCK",
-            "reason": "SQL does not use an approved project table.",
-        }
-    if uses_select_star(normalized_sql):
-        return {
-            "decision": "BLOCK",
-            "reason": "SQL must not use SELECT *.",
-        }
+    except sqlglot.errors.SqlglotError:
+        return block("SQL could not be parsed or checked.")
 
     return {
         "decision": "ALLOW",
-        "reason": "SQL passed read-only safety checks.",
+        "reason": "SQL passed the implemented structural checks.",
     }
 
 
 def main() -> None:
-    if len(sys.argv) > 1:
-        sql = " ".join(sys.argv[1:])
-    else:
-        sql = "SELECT product_type, COUNT(*) FROM p2c GROUP BY product_type"
+    if len(sys.argv) < 2:
+        print("Pass a SQL query inside double quotes.")
+        return
 
-    result = check_sql_safety(sql)
+    sql_text = " ".join(sys.argv[1:])
+    result = check_sql_safety(sql_text)
 
-    print(f"SQL: {sql}")
+    print(f"SQL: {sql_text}")
     print(f"Decision: {result['decision']}")
     print(f"Reason: {result['reason']}")
 

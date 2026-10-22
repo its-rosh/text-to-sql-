@@ -3,6 +3,7 @@ pandas
 openpyxl
 python-dotenv
 sqlparse
+sqlglot
 databricks-sql-connector
 requests
 scikit-learn
