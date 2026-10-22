@@ -12,8 +12,8 @@ from check_ques_before_sql import run_pre_sql_checks
 
 
 APPROVED_TABLES = [
-    "cdp_uat.dsag_new.p2c",
-    "cdp_uat.dsag_new.mab_meb",
+    "workspace.default.p2c",
+    "workspace.default.mab_meb",
 ]
 
 SQL_RULES = [
