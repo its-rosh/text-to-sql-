@@ -3,7 +3,6 @@ Step 8: Check RAG Evidence
 
 Purpose:
 Decide whether retrieved RAG context is strong enough to answer a question.
-
 Input:
 - User question
 - .chroma/ vector database
@@ -41,7 +40,17 @@ def retrieve_context(question: str) -> dict:
 
 
 def decide_if_evidence_is_enough(results: dict) -> tuple[bool, str]:
-    distances = results["distances"][0]
+    document_groups = results.get("documents")
+    distance_groups = results.get("distances")
+
+    if not document_groups or not distance_groups:
+        return False, "No RAG evidence was returned."
+
+    documents = document_groups[0]
+    distances = distance_groups[0]
+
+    if not documents or not distances:
+        return False, "No matching RAG evidence was found."
 
     best_distance = min(distances)
 

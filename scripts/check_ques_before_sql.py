@@ -109,6 +109,14 @@ def run_pre_sql_checks(question: str) -> dict:
         route_result["route"],
         rag_results["documents"][0],
     )
+    missing_context = any(
+        context.startswith("Required context missing:")
+        for context in retrieved_context
+    )
+
+    if missing_context:
+        is_evidence_allowed = False
+        evidence_reason = "Required table or business context is missing."
 
     if not is_evidence_allowed:
         return {
@@ -155,3 +163,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

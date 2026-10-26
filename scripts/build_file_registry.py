@@ -7,14 +7,11 @@ create a simple registry CSV
 save it to reports/file_registry.csv"""
 
 from pathlib import Path
-
 import pandas as pd
-
 
 DATA_DIR = Path("data")
 REPORTS_DIR = Path("reports")
 REGISTRY_PATH = REPORTS_DIR / "file_registry.csv"
-
 
 def build_registry_rows() -> list[dict]:
     registry_rows = []
