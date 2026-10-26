@@ -9,7 +9,6 @@ Run: python scripts/upload_excel_to_databricks.py
 import os
 import sys
 from pathlib import Path
-
 import pandas as pd
 from databricks import sql
 from dotenv import load_dotenv

@@ -8,7 +8,6 @@ Run: python scripts/check_ques_before_sql.py "Show total MAB by income segment"
 
 from pathlib import Path
 import sys
-
 from check_rag_evidence import decide_if_evidence_is_enough
 from check_rag_evidence import retrieve_context
 from route_question import route_question

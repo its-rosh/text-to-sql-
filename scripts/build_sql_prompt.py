@@ -7,7 +7,6 @@ Run: python scripts/build_sql_prompt.py "Show total MAB by income segment"
 """
 
 import sys
-
 from check_ques_before_sql import run_pre_sql_checks
 
 

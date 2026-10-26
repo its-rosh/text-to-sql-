@@ -16,9 +16,10 @@ REQUIRED_TEXT = [
     "Table name: mab_meb",
     "p2c.source_account_nbr joins to mab_meb.ACCTNO",
     "MAB means Monthly Average Balance",
-    "MEB means Monthly End Balance",
+    "MEB means Month-End Balance",
     "Dormant accounts are identified using dormancy_status = 'D'",
 ]
+
 
 
 def main() -> None:

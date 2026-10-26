@@ -1,0 +1,103 @@
+warning: in the working copy of 'requirements.txt', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/scripts/build_file_registry.py b/scripts/build_file_registry.py[m
+[1mindex 897d495..8d62fd5 100644[m
+[1m--- a/scripts/build_file_registry.py[m
+[1m+++ b/scripts/build_file_registry.py[m
+[36m@@ -7,15 +7,12 @@[m [mcreate a simple registry CSV[m
+ save it to reports/file_registry.csv"""[m
+ [m
+ from pathlib import Path[m
+[31m-[m
+ import pandas as pd[m
+ [m
+[31m-[m
+ DATA_DIR = Path("data")[m
+ REPORTS_DIR = Path("reports")[m
+ REGISTRY_PATH = REPORTS_DIR / "file_registry.csv"[m
+ [m
+[31m-[m
+ def build_registry_rows() -> list[dict]:[m
+     registry_rows = [][m
+ [m
+[1mdiff --git a/scripts/build_sql_prompt.py b/scripts/build_sql_prompt.py[m
+[1mindex ec459b6..f8b2748 100644[m
+[1m--- a/scripts/build_sql_prompt.py[m
+[1m+++ b/scripts/build_sql_prompt.py[m
+[36m@@ -81,4 +81,5 @@[m [mdef main() -> None:[m
+ [m
+ [m
+ if __name__ == "__main__":[m
+[31m-    main()[m
+\ No newline at end of file[m
+[32m+[m[32m    main()[m
+[41m+[m
+[1mdiff --git a/scripts/check_ques_before_sql.py b/scripts/check_ques_before_sql.py[m
+[1mindex a67902f..c1c6f3a 100644[m
+[1m--- a/scripts/check_ques_before_sql.py[m
+[1m+++ b/scripts/check_ques_before_sql.py[m
+[36m@@ -109,6 +109,14 @@[m [mdef run_pre_sql_checks(question: str) -> dict:[m
+         route_result["route"],[m
+         rag_results["documents"][0],[m
+     )[m
+[32m+[m[32m    missing_context = any([m
+[32m+[m[32m        context.startswith("Required context missing:")[m
+[32m+[m[32m        for context in retrieved_context[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    if missing_context:[m
+[32m+[m[32m        is_evidence_allowed = False[m
+[32m+[m[32m        evidence_reason = "Required table or business context is missing."[m
+ [m
+     if not is_evidence_allowed:[m
+         return {[m
+[36m@@ -154,4 +162,5 @@[m [mdef main() -> None:[m
+ [m
+ [m
+ if __name__ == "__main__":[m
+[31m-    main()[m
+\ No newline at end of file[m
+[32m+[m[32m    main()[m
+[41m+[m
+[1mdiff --git a/scripts/check_rag_evidence.py b/scripts/check_rag_evidence.py[m
+[1mindex a0be168..91eb35a 100644[m
+[1m--- a/scripts/check_rag_evidence.py[m
+[1m+++ b/scripts/check_rag_evidence.py[m
+[36m@@ -3,7 +3,6 @@[m [mStep 8: Check RAG Evidence[m
+ [m
+ Purpose:[m
+ Decide whether retrieved RAG context is strong enough to answer a question.[m
+[31m-[m
+ Input:[m
+ - User question[m
+ - .chroma/ vector database[m
+[36m@@ -41,7 +40,17 @@[m [mdef retrieve_context(question: str) -> dict:[m
+ [m
+ [m
+ def decide_if_evidence_is_enough(results: dict) -> tuple[bool, str]:[m
+[31m-    distances = results["distances"][0][m
+[32m+[m[32m    document_groups = results.get("documents")[m
+[32m+[m[32m    distance_groups = results.get("distances")[m
+[32m+[m
+[32m+[m[32m    if not document_groups or not distance_groups:[m
+[32m+[m[32m        return False, "No RAG evidence was returned."[m
+[32m+[m
+[32m+[m[32m    documents = document_groups[0][m
+[32m+[m[32m    distances = distance_groups[0][m
+[32m+[m
+[32m+[m[32m    if not documents or not distances:[m
+[32m+[m[32m        return False, "No matching RAG evidence was found."[m
+ [m
+     best_distance = min(distances)[m
+ [m
+[1mdiff --git a/scripts/check_sql_reliability.py b/scripts/check_sql_reliability.py[m
+[1mindex b34b4c3..81d4fe7 100644[m
+[1m--- a/scripts/check_sql_reliability.py[m
+[1m+++ b/scripts/check_sql_reliability.py[m
+[36m@@ -156,4 +156,5 @@[m [mdef main() -> None:[m
+ [m
+ [m
+ if __name__ == "__main__":[m
+[31m-    main()[m
+\ No newline at end of file[m
+[32m+[m[32m    main()[m
+[41m+[m

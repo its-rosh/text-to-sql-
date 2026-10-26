@@ -13,6 +13,7 @@ EXCEL_FILES = [
 ]
 
 
+
 def write_line(report_file, text: str = "") -> None:
     print(text)
     report_file.write(text + "\n")

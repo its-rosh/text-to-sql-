@@ -20,7 +20,6 @@ This script stores metadata text chunks, not raw Excel data rows.
 """
 
 from pathlib import Path
-
 import chromadb
 
 

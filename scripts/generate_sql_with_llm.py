@@ -7,7 +7,6 @@ Run: python scripts/generate_sql_with_llm.py "Show total MAB by income segment"
 """
 
 import sys
-
 import requests
 from dotenv import load_dotenv
 

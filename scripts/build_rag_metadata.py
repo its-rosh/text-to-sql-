@@ -2,13 +2,18 @@
 Later, ChromaDB will store these chunks as searchable knowledge."""
 
 from pathlib import Path
-
+import json
 import pandas as pd
 
 
 REPORTS_DIR = Path("reports")
 REGISTRY_PATH = REPORTS_DIR / "file_registry.csv"
 METADATA_PATH = REPORTS_DIR / "rag_metadata.txt"
+GLOSSARY_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "config"
+    / "business_glossary.json"
+)
 
 
 TABLE_DESCRIPTIONS = {
@@ -51,15 +56,40 @@ JOIN_RULES = [
 ]
 
 
+
 BUSINESS_TERMS = [
-    "MAB means Monthly Average Balance.",
-    "MEB means Monthly End Balance.",
     "UCIC means Unique Customer Identification Code.",
     "NRI means Non-Resident Indian.",
     "Dormant accounts are identified using dormancy_status = 'D'.",
     "Open accounts likely have account_close_date = '-'.",
 ]
 
+def build_glossary_text() -> str:
+    glossary = json.loads(GLOSSARY_PATH.read_text(encoding="utf-8"))
+    lines = []
+
+    for section in ("metrics", "dimensions"):
+        for name, details in glossary[section].items():
+            if "description" in details:
+                lines.append(f"{name.upper()} means {details['description']}.")
+
+            lines.append(
+                f"{name} maps to {details['table']}.{details['column']}."
+            )
+            lines.append("Synonyms: " + ", ".join(details["synonyms"]))
+
+    for term, details in glossary["ambiguous_terms"].items():
+        lines.append(
+            f"When '{term}' is ambiguous, ask: {details['question']} "
+            f"Supported choices: {', '.join(details['choices'])}."
+        )
+
+    lines.append(
+        "Recognize specific phrases before ambiguous individual words. "
+        "A metric's name does not determine the requested aggregation."
+    )
+
+    return "\n".join(lines)
 
 def build_metadata_text(registry_df: pd.DataFrame) -> str:
     chunks = []
@@ -93,8 +123,9 @@ All columns: {row["columns"]}
         chunks.append(chunk)
 
     chunks.append("Join rules:\n" + "\n".join(JOIN_RULES))
-    chunks.append("Business terms:\n" + "\n".join(BUSINESS_TERMS))
-
+    business_text = "\n".join(BUSINESS_TERMS)
+    glossary_text = build_glossary_text()
+    chunks.append("Business terms:\n" + business_text + "\n" + glossary_text)
     return "\n\n---\n\n".join(chunks)
 
 

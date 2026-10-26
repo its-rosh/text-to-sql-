@@ -7,7 +7,6 @@ Run: python scripts/check_sql_safety.py "SELECT product_type FROM workspace.defa
 """
 
 import sys
-
 import sqlglot
 from sqlglot import exp
 from sqlglot.optimizer.scope import traverse_scope

@@ -1,0 +1,46 @@
+{
+
+  "_file_info": {
+    "purpose": "Define approved business terms, synonyms, database mappings, and ambiguous terms.",
+    "pipeline_position": "Shared definitions used before question interpretation and RAG metadata generation.",
+    "input": "Manually reviewed business definitions and confirmed table and column names.",
+    "output": "Structured definitions; this file does not execute code or generate output itself.",
+    "consumers": "Planned: build_rag_metadata.py for retrieval text, and question interpretation code for clarification."
+  },
+  "metrics": {
+    "mab": {
+      "description": "Monthly Average Balance",
+      "table": "workspace.default.mab_meb",
+      "column": "mab_bal",
+      "synonyms": ["mab", "monthly average balance"]
+    },
+    "meb": {
+      "description": "Month-End Balance",
+      "table": "workspace.default.mab_meb",
+      "column": "meb_bal",
+      "synonyms": ["meb", "month-end balance", "month end balance"]
+    }
+  },
+  "dimensions": {
+    "income_segment": {
+      "table": "workspace.default.mab_meb",
+      "column": "income_segment",
+      "synonyms": ["income segment"]
+    },
+    "final_segment": {
+      "table": "workspace.default.mab_meb",
+      "column": "final_segment",
+      "synonyms": ["final segment"]
+    }
+  },
+  "ambiguous_terms": {
+    "balance": {
+      "question": "Which balance do you mean?",
+      "choices": ["mab", "meb"]
+    },
+    "segment": {
+      "question": "Which segment do you mean?",
+      "choices": ["income_segment", "final_segment"]
+    }
+  }
+}
