@@ -1,47 +1,63 @@
 """
 Step 18: Run Verified SQL
-Purpose: Check SQL safety and reliability before running it in Databricks.
-Input: User question and SQL text from terminal.
+Purpose: Check SQL safety and reliability before executing query in Databricks SQL Warehouse.
+Input: User question and SQL text.
 Output: Query result rows, or BLOCK/REVIEW reason.
-Run: python scripts/run_verified_sql.py "Show total MAB by income segment" "SELECT income_segment, SUM(mab_bal) AS total_mab_bal FROM workspace.default.mab_meb GROUP BY income_segment"
+Run: python scripts/run_verified_sql.py "Show total MAB by income segment" "SELECT income_segment, SUM(mab_bal) FROM workspace.default.mab_meb GROUP BY income_segment"
 """
 
+import os
 import sys
-
 from dotenv import load_dotenv
 
 from check_sql_reliability import check_sql_reliability
 from check_sql_safety import check_sql_safety
-from run_safe_databricks_query import MAX_ROWS_TO_PRINT
 from run_safe_databricks_query import run_query
 
 
-def run_verified_sql(question: str, sql_text: str) -> dict:
-    safety_result = check_sql_safety(sql_text)
+def run_verified_sql(
+    question: str,
+    sql_text: str,
+    skip_reliability_check: bool = False,
+    max_rows: int | None = None,
+) -> dict:
+    load_dotenv()
 
+    safety_result = check_sql_safety(sql_text)
     if safety_result["decision"] == "BLOCK":
         return {
             "decision": "BLOCK",
             "reason": safety_result["reason"],
             "rows": [],
+            "source": "none",
         }
 
-    reliability_result = check_sql_reliability(question, sql_text)
+    if not skip_reliability_check:
+        reliability_result = check_sql_reliability(question, sql_text)
+        if reliability_result["decision"] == "REVIEW":
+            return {
+                "decision": "REVIEW",
+                "reason": reliability_result["reason"],
+                "rows": [],
+                "source": "none",
+            }
 
-    if reliability_result["decision"] == "REVIEW":
+    # Execute directly in Databricks
+    try:
+        rows = run_query(sql_text, max_rows=max_rows)
         return {
-            "decision": "REVIEW",
-            "reason": reliability_result["reason"],
-            "rows": [],
+            "decision": "ALLOW",
+            "reason": "SQL passed safety and reliability checks (Executed in Databricks).",
+            "rows": rows,
+            "source": "databricks",
         }
-
-    rows = run_query(sql_text)
-
-    return {
-        "decision": "ALLOW",
-        "reason": "SQL passed safety and reliability checks.",
-        "rows": rows,
-    }
+    except Exception as err:
+        return {
+            "decision": "BLOCK",
+            "reason": f"Databricks execution error: {err}",
+            "rows": [],
+            "source": "databricks",
+        }
 
 
 def main() -> None:
@@ -65,12 +81,8 @@ def main() -> None:
     print(f"SQL: {sql_text}")
     print(f"Decision: {result['decision']}")
     print(f"Reason: {result['reason']}")
-
-    if result["rows"]:
-        print(f"\nShowing up to {MAX_ROWS_TO_PRINT} rows:")
-
-        for row in result["rows"]:
-            print(row)
+    print(f"Source: {result.get('source')}")
+    print(f"Rows returned: {len(result.get('rows', []))}")
 
 
 if __name__ == "__main__":

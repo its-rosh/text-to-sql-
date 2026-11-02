@@ -1,133 +1,94 @@
 # Conversational Analytics: Natural Language Text-to-SQL
 
-This project builds a read-only conversational analytics chatbot for banking/reporting data.
+This project builds a read-only conversational analytics chatbot for banking and reporting data.
 
-The user asks a business question in English. The system retrieves approved context, asks an LLM to generate SQL, checks the SQL for safety and reliability, runs the approved query in Databricks, and returns the answer with the SQL used.
+The user asks a business question in natural language (English). The system retrieves approved domain context, prompts an LLM to generate Databricks SQL, performs strict safety and business reliability checks, executes the query (in Databricks SQL Warehouse or locally in mock/sandbox mode), and displays the resulting data table and explanation.
 
 ## Core Rules
 
-- The chatbot must be read-only.
-- The chatbot may only run `SELECT` queries.
-- The chatbot must block unsafe SQL such as `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `DROP`, `ALTER`, `CREATE`, and `TRUNCATE`.
-- The chatbot must not hallucinate.
-- If approved context is not enough to answer, the chatbot must say: `Not under my knowledge.`
-- Reliability checks are built internally.
+- **Read-Only**: The chatbot may only run `SELECT` queries (including Common Table Expressions with `WITH`).
+- **Strict Safety Gate**: Blocks database-altering commands including `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `DROP`, `ALTER`, `CREATE`, and `TRUNCATE`.
+- **Anti-Hallucination & Evidence Gate**: If retrieved context does not contain sufficient verified knowledge to answer the question, the chatbot returns:
+  `Not under my knowledge.`
+- **Business Reliability**: Checks that generated SQL matches the user's intended metrics, aggregations (`SUM`, `AVG`, `COUNT`), dimensions, and joins before execution.
 
-## Current Data Sources
+## Data Sources & Tables
 
-- `data/p2c_dummy_data_1000rows.xlsx`
-- `data/mab_meb_dummy_data_1000rows.xlsx`
+- `data/p2c_dummy_data_1000rows.xlsx` (Customer-account linkage data)
+- `data/mab_meb_dummy_data_1000rows.xlsx` (Monthly Average and Month-End Balances)
 
-These files will be mapped to Databricks tables:
+Mapped to Databricks tables:
+- `cdp_uat.dsag_new.p2c` (or `workspace.default.p2c` in Free Edition)
+- `cdp_uat.dsag_new.mab_meb` (or `workspace.default.mab_meb` in Free Edition)
 
-- `cdp_uat.dsag_new.p2c`
-- `cdp_uat.dsag_new.mab_meb`
-
-## Main Join
+### Primary Join Condition
 
 ```sql
 p.source_account_nbr = m.ACCTNO
 ```
 
-## Environment Variables
-
-This project uses a local `.env` file for personal project-specific secrets.
-
-Use `.env.example` as the safe template.
-
-## Planned Flow
+## System Architecture Flow
 
 ```text
 User question
--> Question router
--> RAG context retrieval
--> Evidence gate
--> LLM SQL generation
--> SQL safety checker
--> SQL reliability checker
--> Databricks SQL execution
--> Website answer
+      ↓
+Streamlit website / CLI
+      ↓
+Question Router (identifies domains: p2c, mab_meb, both, or out-of-scope)
+      ↓
+ChromaDB Vector Store (retrieves approved metadata chunks)
+      ↓
+Evidence Gate (validates distance and required context chunks)
+      ↓
+Prompt Builder & LLM Generator (generates safe Databricks SELECT query)
+      ↓
+SQL Safety Checker (enforces SELECT-only, single statement, approved tables)
+      ↓
+SQL Reliability Checker (verifies metrics, dimensions, aggregations, joins)
+      ↓
+Query Execution Engine (Databricks Warehouse or Local Sandbox Engine)
+      ↓
+Interactive Results View (Table, Metrics, Status)
 ```
 
-## Project Phases
+## Project Structure
 
-1. Project foundation and environment setup
-2. Benchmark questions
-3. Data catalog
-4. Databricks setup
-5. RAG knowledge base
-6. Question router
-7. LLM SQL generation
-8. SQL safety and reliability checks
-9. Streamlit website
-10. Evaluation, hosting, and future improvements
-<<<<<<< HEAD
+- `app/`: Streamlit web interface (`app/main.py`)
+- `config/`: Business glossary and mappings (`config/business_glossary.json`)
+- `data/`: Excel source files for customer and balance data
+- `docs/`: Data catalog, Databricks setup, and benchmark test questions
+- `reports/`: Extracted file registry and RAG metadata chunks
+- `scripts/`: Modular pipeline scripts:
+  - `route_question.py`: Domain routing
+  - `check_rag_evidence.py`: RAG context retrieval & distance gating
+  - `check_ques_before_sql.py`: Pre-SQL validation gate
+  - `build_sql_prompt.py`: Prompt builder with schema & rules
+  - `generate_sql_with_llm.py`: Groq LLM integration with Markdown cleaner
+  - `check_sql_safety.py`: AST-based SQL safety validation
+  - `check_sql_reliability.py`: Business logic and aggregation verification
+  - `local_query_engine.py`: Zero-setup local SQLite query executor for dummy data
+  - `run_verified_sql.py`: Unified executor supporting Databricks and Local mode
+- `tests/`: Automated unit and integration tests
 
-User question
-      ↓
-Streamlit website
-      ↓
-Question Router
-      ↓
-decide relevant table/domain
-      ↓
-embed user question
-      ↓
-ChromaDB
-      ↓
-retrieve RAG context
-      ↓
-Evidence Gate
-      ↓
-check if context is enough
-      ↓
-build LLM prompt
-      ↓
-Free / private LLM
-      ↓
-generate proposed Databricks SQL
-      ↓
-SQL Safety Checker
-      ↓
-check SELECT-only SQL
-      ↓
-SQL Reliability Checker
-      ↓
-check table, column, metric, join, grouping
-      ↓
-Databricks SQL Warehouse
-      ↓
-run approved query
-      ↓
-SQL result table
-      ↓
-Answer Generator
-      ↓
-final answer
-      ↓
-Streamlit website
-      ↓
-show answer + SQL + result + status
-=======
->>>>>>> ab6124d957864fd9800cdebd30e8fce6121f84a6
+## Setup & Running
 
-## Future File Upload Plan
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-For the first version, files will be added manually into the `data/` folder and processed by the local data ingestion pipeline.
+2. Configure environment:
+   Copy `.env.example` to `.env` and configure your API keys (or run in local mode):
+   ```bash
+   cp .env.example .env
+   ```
 
-Current flow:
+3. Run the Streamlit web application:
+   ```bash
+   streamlit run app/main.py
+   ```
 
-```text
-Excel file in data/
-      ↓
-file registry script
-      ↓
-inspect sheets, columns, row count
-      ↓
-prepare metadata
-      ↓
-load into Databricks
-      ↓
-create RAG chunks
-      ↓
-store embeddings in ChromaDB
+4. Run automated tests:
+   ```bash
+   pytest
+   ```

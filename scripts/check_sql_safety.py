@@ -1,30 +1,55 @@
 """
 Step 11: Check SQL Safety.
 Purpose: Check query structure, approved tables, and wildcard columns.
-Input: SQL text passed through the terminal.
+Input: SQL text passed through the terminal or API.
 Output: ALLOW or BLOCK with a reason.
 Run: python scripts/check_sql_safety.py "SELECT product_type FROM workspace.default.p2c"
 """
 
+import os
 import sys
 import sqlglot
 from sqlglot import exp
 from sqlglot.optimizer.scope import traverse_scope
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-APPROVED_TABLES = {
-    "workspace.default.p2c",
-    "workspace.default.mab_meb",
-}
+def get_approved_tables() -> set[str]:
+    tables = {
+        "workspace.default.p2c",
+        "workspace.default.mab_meb",
+        "cdp_uat.dsag_new.p2c",
+        "cdp_uat.dsag_new.mab_meb",
+        "default.p2c",
+        "default.mab_meb",
+        "p2c",
+        "mab_meb",
+    }
+    p2c_env = os.getenv("DATABRICKS_P2C_TABLE")
+    if p2c_env:
+        tables.add(p2c_env.strip().lower())
+    mab_env = os.getenv("DATABRICKS_MAB_MEB_TABLE")
+    if mab_env:
+        tables.add(mab_env.strip().lower())
+    return tables
+
+
+APPROVED_TABLES = get_approved_tables()
 
 
 def check_sql_safety(sql_text: str) -> dict:
     def block(reason: str) -> dict:
         return {"decision": "BLOCK", "reason": reason}
 
+    if not sql_text or not sql_text.strip():
+        return block("Empty SQL query.")
+
+    clean_sql = sql_text.strip().rstrip(";")
+
     try:
-        # Parse SQL into a structure instead of checking text fragments.
-        statements = sqlglot.parse(sql_text, read="databricks")
+        statements = sqlglot.parse(clean_sql, read="databricks")
 
         if len(statements) != 1 or statements[0] is None:
             return block("Provide exactly one SQL statement.")
@@ -39,12 +64,21 @@ def check_sql_safety(sql_text: str) -> dict:
             if isinstance(node, (exp.DDL, exp.DML, exp.Command, exp.Into)):
                 return block("Database-changing SQL is not allowed.")
 
-        for select in query.find_all(exp.Select):
-            for column in select.expressions:
-                if column.is_star:
-                    return block("SELECT * and table.* are not allowed.")
+        # Check for wildcards directly on physical database tables
+        for scope in traverse_scope(query):
+            has_star = False
+            if hasattr(scope.expression, "selects"):
+                has_star = any(col.is_star for col in scope.expression.selects)
+            elif isinstance(scope.expression, exp.Select):
+                has_star = any(col.is_star for col in scope.expression.expressions)
+
+            if has_star:
+                for _, (_, source) in scope.selected_sources.items():
+                    if isinstance(source, exp.Table):
+                        return block("SELECT * and table.* on physical tables are not allowed.")
 
         found_table = False
+        approved_tables = get_approved_tables()
 
         # Scopes distinguish actual database tables from CTE references.
         for scope in traverse_scope(query):
@@ -62,7 +96,7 @@ def check_sql_safety(sql_text: str) -> dict:
                     part.name for part in source.parts
                 ).lower()
 
-                if table_name not in APPROVED_TABLES:
+                if table_name not in approved_tables:
                     return block(f"Table is not approved: {table_name}")
 
                 found_table = True

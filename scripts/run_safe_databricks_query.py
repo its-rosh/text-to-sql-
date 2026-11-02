@@ -35,11 +35,14 @@ def get_connection():
     )
 
 
-def run_query(query: str) -> list:
+def run_query(query: str, max_rows: int | None = None) -> list:
     with get_connection() as connection:
         with connection.cursor() as cursor:
             cursor.execute(query)
-            rows = cursor.fetchmany(MAX_ROWS_TO_PRINT)
+            if max_rows is not None:
+                rows = cursor.fetchmany(max_rows)
+            else:
+                rows = cursor.fetchall()
 
     return rows
 

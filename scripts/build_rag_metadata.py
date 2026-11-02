@@ -56,7 +56,6 @@ JOIN_RULES = [
 ]
 
 
-
 BUSINESS_TERMS = [
     "UCIC means Unique Customer Identification Code.",
     "NRI means Non-Resident Indian.",
@@ -64,21 +63,27 @@ BUSINESS_TERMS = [
     "Open accounts likely have account_close_date = '-'.",
 ]
 
+
 def build_glossary_text() -> str:
     glossary = json.loads(GLOSSARY_PATH.read_text(encoding="utf-8"))
     lines = []
 
     for section in ("metrics", "dimensions"):
-        for name, details in glossary[section].items():
+        for name, details in glossary.get(section, {}).items():
             if "description" in details:
                 lines.append(f"{name.upper()} means {details['description']}.")
 
             lines.append(
                 f"{name} maps to {details['table']}.{details['column']}."
             )
-            lines.append("Synonyms: " + ", ".join(details["synonyms"]))
+            lines.append("Synonyms: " + ", ".join(details.get("synonyms", [])))
 
-    for term, details in glossary["ambiguous_terms"].items():
+    if "product_code_mappings" in glossary:
+        lines.append("Product code mappings: " + ", ".join(f"{k} = {v}" for k, v in glossary["product_code_mappings"].items()))
+    if "status_code_mappings" in glossary:
+        lines.append("Status code mappings: " + ", ".join(f"{k} = {v}" for k, v in glossary["status_code_mappings"].items()))
+
+    for term, details in glossary.get("ambiguous_terms", {}).items():
         lines.append(
             f"When '{term}' is ambiguous, ask: {details['question']} "
             f"Supported choices: {', '.join(details['choices'])}."
@@ -90,6 +95,7 @@ def build_glossary_text() -> str:
     )
 
     return "\n".join(lines)
+
 
 def build_metadata_text(registry_df: pd.DataFrame) -> str:
     chunks = []

@@ -31,8 +31,8 @@ cdp_uat.dsag_new.mab_meb
 Practice/free-edition fallback names:
 
 ```text
-conversational_analytics.p2c
-conversational_analytics.mab_meb
+workspace.default.p2c
+workspace.default.mab_meb
 ```
 
 ---
@@ -82,7 +82,6 @@ Phase 4 is complete when:
 - the join query returns rows
 - table names are recorded in `.env`
 - benchmark SQL can be run manually in Databricks SQL editor
-``` d
 
 ---
 
@@ -105,3 +104,4 @@ New file added to data/
 -> embed chunks
 -> store embeddings in ChromaDB
 -> make the new table available to the Question Router
+```

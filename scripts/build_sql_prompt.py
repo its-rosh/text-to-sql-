@@ -1,37 +1,61 @@
 """
 Step 13: Build SQL Prompt
 Purpose: Prepare safe context that will be sent to the LLM for SQL generation.
-Input: User question from terminal.
+Input: User question from terminal or API.
 Output: SQL-generation prompt, or BLOCK decision.
 Run: python scripts/build_sql_prompt.py "Show total MAB by income segment"
 """
 
+import os
 import sys
+from dotenv import load_dotenv
 from check_ques_before_sql import run_pre_sql_checks
 
+load_dotenv()
 
-APPROVED_TABLES = [
-    "workspace.default.p2c",
-    "workspace.default.mab_meb",
-]
+
+def get_approved_tables() -> list[str]:
+    p2c = os.getenv("DATABRICKS_P2C_TABLE", "workspace.default.p2c")
+    mab = os.getenv("DATABRICKS_MAB_MEB_TABLE", "workspace.default.mab_meb")
+    return [p2c, mab]
+
 
 SQL_RULES = [
     "Generate Databricks SQL only.",
     "Use only SELECT or WITH queries.",
     "Do not generate INSERT, UPDATE, DELETE, MERGE, DROP, ALTER, CREATE, TRUNCATE, or REPLACE.",
-    "Do not use SELECT *.",
+    "Do not use SELECT * on physical database tables; explicitly specify needed column names.",
+    "When joining p2c and mab_meb, always join ON p2c.source_account_nbr = mab_meb.ACCTNO.",
     "Use only approved tables and columns from the provided context.",
-    "If the context is not enough, return exactly: Not under my knowledge.",
+    "Do not include markdown code block formatting (like ```sql) or explanatory text. Return raw SQL only.",
+    "If the context is not enough to answer the question, return exactly: Not under my knowledge.",
+]
+
+APPROVED_COLUMN_ALIASES_AND_SYNONYMS = [
+    "- Tenure / Account Age (in years): DATEDIFF(CURRENT_DATE(), account_open_date) / 365.25",
+    "- Open accounts filter: account_close_date = '-' (hyphen indicates active/open)",
+    "- Closed accounts filter: account_close_date <> '-' (or account_close_date != '-')",
+    "- Dormancy filter: dormancy_status = 'D' (A = Active, I = Inactive)",
+    "- NRI flag in p2c: nri_status = 'Y' (or 'N')",
+    "- NRI flag in mab_meb: nriflag = 'Y' (or 'N')",
+    "- Balances: mab_bal = Monthly Average Balance, meb_bal = Month-End Balance",
+    "- Customer segment in mab_meb: final_segment or income_segment",
+    "- Customer name in p2c: full_name (repeatable, group by full_name for customer-level counts)",
+    "- Customer name in mab_meb: CUST_NAME (uppercase)",
+    "- Account number: p2c.source_account_nbr and mab_meb.ACCTNO",
+    "- Dates are stored as ISO strings (YYYY-MM-DD); use SUBSTR(col, 1, 4) for year or to_date(col) for date functions",
 ]
 
 
 def build_prompt(question: str, route: str, retrieved_context: list[str]) -> str:
     context_text = "\n\n".join(retrieved_context)
-    approved_tables_text = "\n".join(f"- {table}" for table in APPROVED_TABLES)
+    approved_tables = get_approved_tables()
+    approved_tables_text = "\n".join(f"- {table}" for table in approved_tables)
     sql_rules_text = "\n".join(f"- {rule}" for rule in SQL_RULES)
+    aliases_text = "\n".join(APPROVED_COLUMN_ALIASES_AND_SYNONYMS)
 
     prompt = f"""
-You are a SQL generation assistant for a read-only Databricks analytics chatbot.
+You are an expert SQL generation assistant for a read-only Databricks analytics chatbot.
 
 User question:
 {question}
@@ -42,6 +66,9 @@ Question route:
 Approved tables:
 {approved_tables_text}
 
+Approved Column Definitions & Derived Formulas:
+{aliases_text}
+
 Retrieved RAG context:
 {context_text}
 
@@ -49,7 +76,7 @@ SQL rules:
 {sql_rules_text}
 
 Return only one of these:
-1. A single Databricks SELECT/WITH SQL query.
+1. A single Databricks SELECT/WITH SQL query (pure SQL without markdown fences or comments).
 2. Not under my knowledge.
 """.strip()
 
@@ -81,4 +108,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -1,37 +1,78 @@
 {
-
   "_file_info": {
-    "purpose": "Define approved business terms, synonyms, database mappings, and ambiguous terms.",
-    "pipeline_position": "Shared definitions used before question interpretation and RAG metadata generation.",
-    "input": "Manually reviewed business definitions and confirmed table and column names.",
-    "output": "Structured definitions; this file does not execute code or generate output itself.",
-    "consumers": "Planned: build_rag_metadata.py for retrieval text, and question interpretation code for clarification."
+    "purpose": "Define approved business terms, synonyms, database mappings, and domain values.",
+    "pipeline_position": "Shared definitions used for query routing, RAG metadata, prompt building, and reliability checks.",
+    "input": "Bank data catalog, field definitions, and benchmark test cases.",
+    "output": "Structured dictionary of metrics, dimensions, value mappings, and ambiguous terms."
   },
   "metrics": {
     "mab": {
       "description": "Monthly Average Balance",
       "table": "workspace.default.mab_meb",
       "column": "mab_bal",
-      "synonyms": ["mab", "monthly average balance"]
+      "synonyms": ["mab", "monthly average balance", "average monthly balance", "monthly avg balance"]
     },
     "meb": {
       "description": "Month-End Balance",
       "table": "workspace.default.mab_meb",
       "column": "meb_bal",
-      "synonyms": ["meb", "month-end balance", "month end balance"]
+      "synonyms": ["meb", "month-end balance", "month end balance", "monthly end balance"]
+    },
+    "account_count": {
+      "description": "Total number of accounts",
+      "table": "workspace.default.p2c",
+      "column": "source_account_nbr",
+      "synonyms": ["account count", "total accounts", "number of accounts", "how many accounts"]
     }
   },
   "dimensions": {
     "income_segment": {
+      "description": "Customer income tier (e.g. PB for Privilege Banking, GB for General Banking)",
       "table": "workspace.default.mab_meb",
       "column": "income_segment",
-      "synonyms": ["income segment"]
+      "synonyms": ["income segment", "income tier"]
     },
     "final_segment": {
+      "description": "Customer final business segment (e.g. SAL for Salary, HH for Household)",
       "table": "workspace.default.mab_meb",
       "column": "final_segment",
-      "synonyms": ["final segment"]
+      "synonyms": ["final segment", "customer segment", "business segment"]
+    },
+    "product_type": {
+      "description": "Type of banking product (e.g. SA, CA, FD, RD, LN, CC, OD)",
+      "table": "workspace.default.p2c",
+      "column": "product_type",
+      "synonyms": ["product type", "product", "account type"]
+    },
+    "dormancy_status": {
+      "description": "Account activity status ('D' for Dormant, 'A' for Active, 'I' for Inactive)",
+      "table": "workspace.default.p2c",
+      "column": "dormancy_status",
+      "synonyms": ["dormancy status", "dormancy", "dormant", "dormant status"]
+    },
+    "nri_status": {
+      "description": "Non-Resident Indian status flag ('Y' or 'N')",
+      "table": "workspace.default.p2c",
+      "column": "nri_status",
+      "synonyms": ["nri status", "nri flag", "nri"]
     }
+  },
+  "product_code_mappings": {
+    "SA": "Savings Account",
+    "CA": "Current Account",
+    "FD": "Fixed Deposit",
+    "RD": "Recurring Deposit",
+    "OD": "Overdraft",
+    "LN": "Loan",
+    "CC": "Credit Card"
+  },
+  "status_code_mappings": {
+    "D": "Dormant",
+    "A": "Active",
+    "I": "Inactive"
+  },
+  "join_rules": {
+    "p2c_to_mab_meb": "p2c.source_account_nbr = mab_meb.ACCTNO"
   },
   "ambiguous_terms": {
     "balance": {

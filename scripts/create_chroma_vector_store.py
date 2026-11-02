@@ -1,31 +1,20 @@
 """
 Step 6: Create Chroma Vector Store
-
-Purpose:
-Store RAG metadata chunks inside ChromaDB so they can be searched later.
-
-Why this file exists:
-Our previous search script used temporary TF-IDF search. That helped us learn
-retrieval. This script creates a persistent local vector store using ChromaDB.
-
-Input:
-- reports/rag_metadata.txt
-
-Output:
-- Local ChromaDB database inside .chroma/
-- Collection named rag_metadata
-
-Important:
-This script stores metadata text chunks, not raw Excel data rows.
+Purpose: Store RAG metadata chunks inside ChromaDB so they can be searched later.
+Input: reports/rag_metadata.txt and settings from .env.
+Output: Local ChromaDB database inside .chroma/
 """
 
+import os
 from pathlib import Path
 import chromadb
+from dotenv import load_dotenv
 
+load_dotenv()
 
 METADATA_PATH = Path("reports") / "rag_metadata.txt"
-CHROMA_DB_DIR = Path(".chroma")
-COLLECTION_NAME = "rag_metadata"
+CHROMA_DB_DIR = Path(os.getenv("CHROMA_DB_DIR", ".chroma"))
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "rag_metadata")
 
 
 def load_chunks() -> list[str]:
@@ -46,18 +35,19 @@ def load_chunks() -> list[str]:
 def create_vector_store(chunks: list[str]) -> None:
     client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
 
-    collection = client.get_or_create_collection(name=COLLECTION_NAME)
+    # Support both primary collection and legacy 'rag_metadata' collection
+    collection_names = list({COLLECTION_NAME, "rag_metadata"})
 
-    ids = [f"chunk_{index}" for index in range(len(chunks))]
+    for col_name in collection_names:
+        collection = client.get_or_create_collection(name=col_name)
+        ids = [f"chunk_{index}" for index in range(len(chunks))]
+        collection.upsert(
+            ids=ids,
+            documents=chunks,
+        )
 
-    collection.upsert(
-        ids=ids,
-        documents=chunks,
-    )
-
-    print(f"Stored {len(chunks)} chunks in ChromaDB.")
+    print(f"Stored {len(chunks)} chunks in ChromaDB collections: {collection_names}.")
     print(f"ChromaDB directory: {CHROMA_DB_DIR}")
-    print(f"Collection name: {COLLECTION_NAME}")
 
 
 def main() -> None:
@@ -67,4 +57,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

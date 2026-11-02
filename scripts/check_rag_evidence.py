@@ -12,23 +12,50 @@ Output:
 - Retrieved context and distance scores
 """
 
+import os
 from pathlib import Path
 import sys
 import chromadb
+from dotenv import load_dotenv
 
+load_dotenv()
 
-CHROMA_DB_DIR = Path(".chroma")
-COLLECTION_NAME = "rag_metadata"
+CHROMA_DB_DIR = Path(os.getenv("CHROMA_DB_DIR", ".chroma"))
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "conversational_analytics_knowledge")
 TOP_K = 3
 
 # Chroma distance: lower is better.
-# This starting threshold is simple and may be tuned later.
 MAX_ALLOWED_DISTANCE = 1.20
+
+
+def get_or_init_collection(client: chromadb.PersistentClient):
+    # Try configured collection first, then fallback to 'rag_metadata'
+    for name in [COLLECTION_NAME, "rag_metadata"]:
+        try:
+            return client.get_collection(name=name)
+        except Exception:
+            continue
+
+    # Auto-initialize if missing
+    metadata_path = Path("reports") / "rag_metadata.txt"
+    if metadata_path.exists():
+        metadata_text = metadata_path.read_text(encoding="utf-8")
+        chunks = [
+            chunk.strip()
+            for chunk in metadata_text.split("\n\n---\n\n")
+            if chunk.strip()
+        ]
+        collection = client.get_or_create_collection(name=COLLECTION_NAME)
+        ids = [f"chunk_{index}" for index in range(len(chunks))]
+        collection.upsert(ids=ids, documents=chunks)
+        return collection
+
+    raise RuntimeError("ChromaDB collection not found and reports/rag_metadata.txt is missing.")
 
 
 def retrieve_context(question: str) -> dict:
     client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
-    collection = client.get_collection(name=COLLECTION_NAME)
+    collection = get_or_init_collection(client)
 
     results = collection.query(
         query_texts=[question],
