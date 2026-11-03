@@ -14,9 +14,13 @@ from check_ques_before_sql import run_pre_sql_checks
 load_dotenv()
 
 
-def get_approved_tables() -> list[str]:
+def get_approved_tables(route: str = "both_tables") -> list[str]:
     p2c = os.getenv("DATABRICKS_P2C_TABLE", "workspace.default.p2c")
     mab = os.getenv("DATABRICKS_MAB_MEB_TABLE", "workspace.default.mab_meb")
+    if route == "mab_meb":
+        return [mab]
+    elif route == "p2c":
+        return [p2c]
     return [p2c, mab]
 
 
@@ -26,6 +30,8 @@ SQL_RULES = [
     "Do not generate INSERT, UPDATE, DELETE, MERGE, DROP, ALTER, CREATE, TRUNCATE, or REPLACE.",
     "Do not use SELECT * on physical database tables; explicitly specify needed column names.",
     "When joining p2c and mab_meb, always join ON p2c.source_account_nbr = mab_meb.ACCTNO.",
+    "Do not join p2c if all requested columns (such as EMP_CODE, retail_bulk, mab_bal, meb_bal, gldesc) already exist in mab_meb. Only join p2c when customer attributes (full_name, account_open_date, account_close_date, dormancy_status, nri_status, ucic_value) are explicitly needed.",
+    "When using CTEs (WITH clauses), downstream queries referencing a CTE must use the CTE name or unqualified column names (e.g., if FROM base, use base.account_close_date or account_close_date, NEVER inner aliases like p2c.account_close_date).",
     "Use only approved tables and columns from the provided context.",
     "Do not include markdown code block formatting (like ```sql) or explanatory text. Return raw SQL only.",
     "If the context is not enough to answer the question, return exactly: Not under my knowledge.",
@@ -42,6 +48,8 @@ APPROVED_COLUMN_ALIASES_AND_SYNONYMS = [
     "- Customer segment in mab_meb: final_segment or income_segment",
     "- Customer name in p2c: full_name (repeatable, group by full_name for customer-level counts)",
     "- Customer name in mab_meb: CUST_NAME (uppercase)",
+    "- Employee code: EMP_CODE exists ONLY in mab_meb (it does NOT exist in p2c; never write p.EMP_CODE).",
+    "- Retail vs Bulk: retail_bulk exists in mab_meb (values: 'RETAIL', 'BULK').",
     "- Account number: p2c.source_account_nbr and mab_meb.ACCTNO",
     "- Dates are stored as ISO strings (YYYY-MM-DD); use SUBSTR(col, 1, 4) for year or to_date(col) for date functions",
 ]
@@ -49,7 +57,7 @@ APPROVED_COLUMN_ALIASES_AND_SYNONYMS = [
 
 def build_prompt(question: str, route: str, retrieved_context: list[str]) -> str:
     context_text = "\n\n".join(retrieved_context)
-    approved_tables = get_approved_tables()
+    approved_tables = get_approved_tables(route)
     approved_tables_text = "\n".join(f"- {table}" for table in approved_tables)
     sql_rules_text = "\n".join(f"- {rule}" for rule in SQL_RULES)
     aliases_text = "\n".join(APPROVED_COLUMN_ALIASES_AND_SYNONYMS)

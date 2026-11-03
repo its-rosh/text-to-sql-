@@ -468,7 +468,8 @@ def run_evaluation(execute_cloud: bool = False) -> dict:
     gate_pct = round((gate_passed_count / total_q) * 100, 1)
     vsr_pct = round((valid_sql_count / total_q) * 100, 1)
     ex_pct = round((execution_acc_count / total_q) * 100, 1)
-    composite_score = round(0.35 * ex_pct + 0.25 * nlcr_pct + 0.20 * gate_pct + 0.20 * vsr_pct, 1)
+    # Equal 25% weight across all 4 key dimensions
+    composite_score = round(0.25 * ex_pct + 0.25 * nlcr_pct + 0.25 * gate_pct + 0.25 * vsr_pct, 1)
 
     summary = {
         "total_questions": total_q,

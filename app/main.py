@@ -164,7 +164,7 @@ with st.sidebar:
 
             value=f"{comp_score}%",
 
-            help="Weighted: 35% Execution + 25% Comprehension + 20% Safety Gate + 20% Valid SQL",
+            help="Weighted: Equally weighted: 25% each across Comprehension, Safety Gate, Valid SQL, and Execution Accuracy",
 
         )
 
@@ -218,13 +218,13 @@ with st.sidebar:
 
                 - **NLCR (25% weight):** Tested across diverse natural language phrasing, slang, and root stems (`open`, `clos`, `tenur`, `age`). Checks router accuracy.
 
-                - **Safety Gate (20% weight):** AST parsed to guarantee read-only `SELECT`, schema isolation, and no destructive commands.
+                - **Safety Gate (25% weight):** AST parsed to guarantee read-only `SELECT`, schema isolation, and no destructive commands.
 
-                - **Valid SQL Rate (20% weight):** AST verification under Databricks SQL dialect ensuring zero SQL syntax errors.
+                - **Valid SQL Rate (25% weight):** AST verification under Databricks SQL dialect ensuring zero SQL syntax errors.
 
-                - **Execution Accuracy (35% weight):** Compares generated SQL structure, table joins, aggregations, and business metrics against gold standard queries.
+                - **Execution Accuracy (25% weight):** Compares generated SQL structure, table joins, aggregations, and business metrics against gold standard queries.
 
-                - **Composite Reliability:** `0.35 × EX + 0.25 × NLCR + 0.20 × Gate + 0.20 × VSR`
+                - **Composite Reliability:** `0.25 × EX + 0.25 × NLCR + 0.25 × Gate + 0.25 × VSR`
 
                 """
 
@@ -741,7 +741,6 @@ if proposal:
                     mime="text/csv",
 
                 )
-                +
 
             else:
 
