@@ -27,10 +27,10 @@
   },
   "dimensions": {
     "income_segment": {
-      "description": "Customer income tier (e.g. PB for Privilege Banking, GB for General Banking)",
-      "table": "workspace.default.mab_meb",
+      "description": "Customer income tier (tiers: AB, MB, PB, RB, WB in p2c)",
+      "table": "workspace.default.p2c",
       "column": "income_segment",
-      "synonyms": ["income segment", "income tier"]
+      "synonyms": ["income segment", "income tier", "income group"]
     },
     "final_segment": {
       "description": "Customer final business segment (e.g. SAL for Salary, HH for Household)",
@@ -77,11 +77,13 @@
   "ambiguous_terms": {
     "balance": {
       "question": "Which balance do you mean?",
-      "choices": ["mab", "meb"]
+      "choices": ["mab", "meb"],
+      "default": "Default to mab_bal unless month-end / meb is specified."
     },
     "segment": {
       "question": "Which segment do you mean?",
-      "choices": ["income_segment", "final_segment"]
+      "choices": ["income_segment", "final_segment"],
+      "default": "Use final_segment for 'customer segment' or segment rankings/dormancy. Use p2c.income_segment when 'income segment' or tiers are requested."
     }
   }
 }

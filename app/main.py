@@ -14,6 +14,15 @@ import streamlit as st
 
 
 
+# Sync secrets from Streamlit Cloud to os.environ
+try:
+    if hasattr(st, "secrets"):
+        for _sec_key, _sec_val in st.secrets.items():
+            if isinstance(_sec_val, str) and _sec_key not in os.environ:
+                os.environ[_sec_key] = _sec_val
+except Exception:
+    pass
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))

@@ -46,7 +46,7 @@ SQL Safety Checker (enforces SELECT-only, single statement, approved tables)
       ↓
 SQL Reliability Checker (verifies metrics, dimensions, aggregations, joins)
       ↓
-Query Execution Engine (Databricks Warehouse or Local Sandbox Engine)
+Query Execution Engine (Databricks Serverless SQL Warehouse)
       ↓
 Interactive Results View (Table, Metrics, Status)
 ```
@@ -66,8 +66,7 @@ Interactive Results View (Table, Metrics, Status)
   - `generate_sql_with_llm.py`: Groq LLM integration with Markdown cleaner
   - `check_sql_safety.py`: AST-based SQL safety validation
   - `check_sql_reliability.py`: Business logic and aggregation verification
-  - `local_query_engine.py`: Zero-setup local SQLite query executor for dummy data
-  - `run_verified_sql.py`: Unified executor supporting Databricks and Local mode
+  - `run_verified_sql.py`: Verified executor connecting to Databricks SQL Warehouse
 - `tests/`: Automated unit and integration tests
 
 ## Setup & Running

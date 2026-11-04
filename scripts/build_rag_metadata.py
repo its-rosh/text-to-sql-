@@ -84,8 +84,9 @@ def build_glossary_text() -> str:
         lines.append("Status code mappings: " + ", ".join(f"{k} = {v}" for k, v in glossary["status_code_mappings"].items()))
 
     for term, details in glossary.get("ambiguous_terms", {}).items():
+        default_rule = details.get("default", "")
         lines.append(
-            f"When '{term}' is ambiguous, ask: {details['question']} "
+            f"When '{term}' is ambiguous in SQL generation: {default_rule} "
             f"Supported choices: {', '.join(details['choices'])}."
         )
 
