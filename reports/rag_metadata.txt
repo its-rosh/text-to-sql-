@@ -1,0 +1,61 @@
+Table name: mab_meb
+Source file: mab_meb_dummy_data_1000rows.xlsx
+Sheet name: Sheet2
+Row count: 1000
+Column count: 36
+Description: Monthly balance data. It contains account number, customer ID, monthly average balance, monthly end balance, segment, final segment, balance bucket, fixed deposit bucket, and income segment.
+Important columns: ACCTNO, CUSTID, mab_bal, meb_bal, segment, final_segment, bal_bucket, fd_bucket, income_segment
+All columns: brcode, CUSTID, ACCTNO, CUST_NAME, conscode, status_code, nriflag, EMP_CODE, ledger_code, qo_flag, glcode, mab_bal, meb_bal, orig_fdamt, mis_date, br_recal, gldesc, rtl_nonrtl, segment, nca_erv, final_segment, bal_bucket, fd_bucket, retail_bulk, sub_product, pbg_flag, source_seg, WM_EMPID, conscode_new, status_code_new, nriflag_new, caldate, income_segment, income_segment_mar, managed_profile, MANAGED_EMPID
+
+---
+
+Table name: p2c
+Source file: p2c_dummy_data_1000rows.xlsx
+Sheet name: P2C
+Row count: 1000
+Column count: 22
+Description: Customer-account linkage data. It contains customer identifiers, account numbers, product type, account status, dormancy status, NRI status, income segment, service segment, and relationship details.
+Important columns: ucic_value, source_account_nbr, account_open_date, account_close_date, product_type, dormancy_status, nri_status, income_segment, service_segment, linkage_identifier
+All columns: ucic_value, source_system_code, account_nbr, source_account_nbr, source_party_id, full_name, criteria, account_open_date, account_close_date, card_block_code, acc_holder, cust_const, cust_stat_code, schm_type, product_type, dormancy_status, nri_status, income_segment, service_segment, relation_type, linked_userid, linkage_identifier
+
+---
+
+Join rules:
+p2c.source_account_nbr joins to mab_meb.ACCTNO.
+
+---
+
+Business terms:
+UCIC means Unique Customer Identification Code.
+NRI means Non-Resident Indian.
+Dormant accounts are identified using dormancy_status = 'D'.
+Open accounts likely have account_close_date = '-'.
+MAB means Monthly Average Balance.
+mab maps to workspace.default.mab_meb.mab_bal.
+Synonyms: mab, monthly average balance, average monthly balance, monthly avg balance
+MEB means Month-End Balance.
+meb maps to workspace.default.mab_meb.meb_bal.
+Synonyms: meb, month-end balance, month end balance, monthly end balance
+ACCOUNT_COUNT means Total number of accounts.
+account_count maps to workspace.default.p2c.source_account_nbr.
+Synonyms: account count, total accounts, number of accounts, how many accounts
+INCOME_SEGMENT means Customer income tier (tiers: AB, MB, PB, RB, WB in p2c).
+income_segment maps to workspace.default.p2c.income_segment.
+Synonyms: income segment, income tier, income group
+FINAL_SEGMENT means Customer final business segment (e.g. SAL for Salary, HH for Household).
+final_segment maps to workspace.default.mab_meb.final_segment.
+Synonyms: final segment, customer segment, business segment
+PRODUCT_TYPE means Type of banking product (e.g. SA, CA, FD, RD, LN, CC, OD).
+product_type maps to workspace.default.p2c.product_type.
+Synonyms: product type, product, account type
+DORMANCY_STATUS means Account activity status ('D' for Dormant, 'A' for Active, 'I' for Inactive).
+dormancy_status maps to workspace.default.p2c.dormancy_status.
+Synonyms: dormancy status, dormancy, dormant, dormant status
+NRI_STATUS means Non-Resident Indian status flag ('Y' or 'N').
+nri_status maps to workspace.default.p2c.nri_status.
+Synonyms: nri status, nri flag, nri
+Product code mappings: SA = Savings Account, CA = Current Account, FD = Fixed Deposit, RD = Recurring Deposit, OD = Overdraft, LN = Loan, CC = Credit Card
+Status code mappings: D = Dormant, A = Active, I = Inactive
+When 'balance' is ambiguous in SQL generation: Default to mab_bal unless month-end / meb is specified. Supported choices: mab, meb.
+When 'segment' is ambiguous in SQL generation: Use final_segment for 'customer segment' or segment rankings/dormancy. Use p2c.income_segment when 'income segment' or tiers are requested. Supported choices: income_segment, final_segment.
+Recognize specific phrases before ambiguous individual words. A metric's name does not determine the requested aggregation.

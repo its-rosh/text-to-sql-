@@ -27,7 +27,9 @@ Thumbs.db
 
 # Generated outputs
 outputs/
-reports/
+reports/*
+!reports/rag_metadata.txt
+!reports/eval_scorecard.json
 .cache/
 
 # Keep Excel source data, but ignore temporary Excel lock files

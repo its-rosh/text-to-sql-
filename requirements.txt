@@ -6,7 +6,6 @@ sqlparse
 sqlglot
 databricks-sql-connector
 requests
-scikit-learn
 numpy
 pytest
 chromadb
