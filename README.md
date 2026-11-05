@@ -1,14 +1,3 @@
----
-title: Conversational Analytics Text To SQL
-emoji: 📊
-colorFrom: blue
-colorTo: indigo
-sdk: streamlit
-sdk_version: "1.39.0"
-app_file: app.py
-pinned: false
----
-
 # Conversational Analytics: Natural Language Text-to-SQL
 
 An enterprise-grade, read-only conversational analytics assistant translating business English into verified, high-performance **Databricks SQL** for banking intelligence.
@@ -24,7 +13,7 @@ An enterprise-grade, read-only conversational analytics assistant translating bu
 - **Databricks Serverless Execution**: Connects securely to Databricks SQL Warehouse using `databricks-sql-connector`.
 - **Interactive Streamlit UI**: Web dashboard featuring query presets, verification status badges, and an automated benchmark scorecard.
 - **Query Advisor & Diagnostics**: Actionable root-cause explanations and instant copy-pasteable *"Suggested change in query"* rewrites.
-- **50-Question Benchmark Engine**: Automated evaluation suite measuring **NLCR (98.0%)**, **Safety Gate (82.0%)**, **Valid SQL (98.0%)**, and **Execution Accuracy (24.0%)** $\rightarrow$ **75.5% Composite Model Reliability**.
+- **50-Question Benchmark Engine**: Automated evaluation suite measuring **NLCR (98.0%)**, **Safety Gate (80.0%)**, **Valid SQL (98.0%)**, and **Execution Accuracy (32.0%)** $\rightarrow$ **77.0% Composite Model Reliability**.
 
 ---
 
