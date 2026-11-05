@@ -53,9 +53,20 @@ def get_or_init_collection(client: chromadb.PersistentClient):
     raise RuntimeError("ChromaDB collection not found and reports/rag_metadata.txt is missing.")
 
 
+_CACHED_CLIENT = None
+_CACHED_COLLECTION = None
+
+
+def get_cached_collection():
+    global _CACHED_CLIENT, _CACHED_COLLECTION
+    if _CACHED_COLLECTION is None:
+        _CACHED_CLIENT = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
+        _CACHED_COLLECTION = get_or_init_collection(_CACHED_CLIENT)
+    return _CACHED_COLLECTION
+
+
 def retrieve_context(question: str) -> dict:
-    client = chromadb.PersistentClient(path=str(CHROMA_DB_DIR))
-    collection = get_or_init_collection(client)
+    collection = get_cached_collection()
 
     results = collection.query(
         query_texts=[question],

@@ -1,3 +1,14 @@
+---
+title: Conversational Analytics Text To SQL
+emoji: 📊
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: "1.39.0"
+app_file: app.py
+pinned: false
+---
+
 # Conversational Analytics: Natural Language Text-to-SQL
 
 An enterprise-grade, read-only conversational analytics assistant translating business English into verified, high-performance **Databricks SQL** for banking intelligence.

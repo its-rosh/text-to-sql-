@@ -239,10 +239,10 @@ ORDER BY product_type, dormancy_rate_pct DESC"""
     return f"SELECT COUNT(*) AS total_records FROM {p2c_tbl}"
 
 
-def generate_sql(question: str) -> str:
+def generate_sql(question: str, pre_checks: dict | None = None) -> str:
     load_dotenv()
 
-    checks = run_pre_sql_checks(question)
+    checks = pre_checks if pre_checks is not None else run_pre_sql_checks(question)
     if checks["decision"] != "ALLOW":
         return "Not under my knowledge."
 

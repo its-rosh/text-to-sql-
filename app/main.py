@@ -381,7 +381,7 @@ if submitted:
 
                 with st.spinner("Retrieving RAG knowledge & generating SQL..."):
 
-                    sql_text = generate_sql(clean_question)
+                    sql_text = generate_sql(clean_question, pre_checks=pre_checks)
 
 
 
