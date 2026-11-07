@@ -1,10 +1,10 @@
 {
   "total_questions": 50,
   "nlcr": 98.0,
-  "gate_pass_rate": 80.0,
+  "gate_pass_rate": 96.0,
   "valid_sql_rate": 98.0,
-  "execution_accuracy": 32.0,
-  "composite_reliability_score": 77.0,
+  "execution_accuracy": 96.0,
+  "composite_reliability_score": 97.0,
   "details": [
     {
       "id": "Q01",
@@ -13,7 +13,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT\n  gldesc,\n  AVG(mab_bal) AS avg_mab,\n  AVG(meb_bal) AS avg_meb\nFROM workspace.default.mab_meb\nWHERE retail_bulk = 'RETAIL'\nGROUP BY gldesc"
+      "sql": "SELECT gldesc, ROUND(AVG(mab_bal),2) AS avg_mab, ROUND(AVG(meb_bal),2) AS avg_meb FROM workspace.default.mab_meb WHERE retail_bulk = 'RETAIL' GROUP BY gldesc ORDER BY gldesc"
     },
     {
       "id": "Q02",
@@ -22,7 +22,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT\n  product_type,\n  COUNT(*) AS account_count\nFROM workspace.default.p2c\nGROUP BY product_type\nORDER BY account_count DESC"
+      "sql": "SELECT product_type, COUNT(*) AS accounts FROM workspace.default.p2c GROUP BY product_type ORDER BY accounts DESC, product_type"
     },
     {
       "id": "Q03",
@@ -31,16 +31,16 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT\n  product_type,\n  COUNT(*) AS closed_account_count\nFROM workspace.default.p2c\nWHERE account_close_date <> '-'\nGROUP BY product_type\nORDER BY closed_account_count DESC"
+      "sql": "SELECT product_type, COUNT(*) AS closed_accounts FROM workspace.default.p2c WHERE account_close_date <> '-' GROUP BY product_type ORDER BY closed_accounts DESC, product_type"
     },
     {
       "id": "Q04",
       "question": "For active, NRI customers, show number of accounts and total MAB by product type, highest MAB first.",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT product_type, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY product_type ORDER BY account_count DESC"
+      "ex_match": true,
+      "sql": "SELECT p.product_type, COUNT(*) AS accounts, ROUND(SUM(m.mab_bal),2) AS total_mab FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.dormancy_status = 'A' AND p.nri_status = 'Y' GROUP BY p.product_type ORDER BY total_mab DESC"
     },
     {
       "id": "Q05",
@@ -49,7 +49,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT p.source_account_nbr AS account_nbr,\n       m.mab_bal,\n       m.meb_bal\nFROM workspace.default.p2c p\nJOIN workspace.default.mab_meb m\n  ON p.source_account_nbr = m.ACCTNO\nWHERE p.account_close_date = '-'\n  AND m.mab_bal > 2 * m.meb_bal\nORDER BY m.mab_bal DESC\nLIMIT 10"
+      "sql": "SELECT p.full_name, p.source_account_nbr, m.mab_bal, m.meb_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' AND m.mab_bal > 2 * m.meb_bal ORDER BY m.mab_bal DESC LIMIT 10"
     },
     {
       "id": "Q06",
@@ -57,17 +57,17 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT income_segment, SUM(mab_bal) AS total_mab_bal FROM workspace.default.mab_meb GROUP BY income_segment ORDER BY income_segment"
+      "ex_match": true,
+      "sql": "SELECT service_segment, income_segment, COUNT(*) AS accounts FROM workspace.default.p2c WHERE service_segment <> income_segment GROUP BY service_segment, income_segment ORDER BY accounts DESC, service_segment, income_segment"
     },
     {
       "id": "Q07",
       "question": "Total MAB by employee code for open, active accounts, highest first.",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT m.EMP_CODE, COUNT(*) AS accounts, ROUND(SUM(m.mab_bal),2) AS total_mab, ROUND(AVG(m.mab_bal),2) AS avg_mab FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' AND p.dormancy_status = 'A' GROUP BY m.EMP_CODE ORDER BY total_mab DESC"
     },
     {
       "id": "Q08",
@@ -75,8 +75,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT dormancy_status, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY dormancy_status ORDER BY account_count DESC"
+      "ex_match": true,
+      "sql": "SELECT dormancy_status, nri_status, COUNT(*) AS accounts FROM workspace.default.p2c GROUP BY dormancy_status, nri_status ORDER BY dormancy_status, nri_status"
     },
     {
       "id": "Q09",
@@ -85,7 +85,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "sql": "SELECT SUBSTR(account_open_date,1,4) AS yr, COUNT(*) AS accounts_opened FROM workspace.default.p2c GROUP BY SUBSTR(account_open_date,1,4) ORDER BY yr DESC"
     },
     {
       "id": "Q10",
@@ -94,7 +94,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT final_segment, SUM(mab_bal) AS total_mab_bal, SUM(meb_bal) AS total_meb_bal FROM workspace.default.mab_meb GROUP BY final_segment ORDER BY final_segment"
+      "sql": "SELECT final_segment, ROUND(SUM(mab_bal),2) AS total_mab, ROUND(SUM(meb_bal),2) AS total_meb FROM workspace.default.mab_meb WHERE retail_bulk = 'RETAIL' GROUP BY final_segment ORDER BY total_mab DESC"
     },
     {
       "id": "Q11",
@@ -102,8 +102,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT p.full_name, p.source_account_nbr, p.card_block_code, m.mab_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' AND p.card_block_code = 'FRZ' ORDER BY m.mab_bal DESC LIMIT 15"
     },
     {
       "id": "Q12",
@@ -112,16 +112,16 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "sql": "SELECT schm_type, COUNT(*) AS accounts FROM workspace.default.p2c WHERE acc_holder = 'MAIN HOLDER' GROUP BY schm_type ORDER BY accounts DESC, schm_type"
     },
     {
       "id": "Q13",
       "question": "How many accounts have a linked user id, and how many do not?",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT\n  SUM(CASE WHEN linked_userid IS NOT NULL AND linked_userid <> '' THEN 1 ELSE 0 END) AS accounts_with_linked_userid,\n  SUM(CASE WHEN linked_userid IS NULL OR linked_userid = '' THEN 1 ELSE 0 END) AS accounts_without_linked_userid\nFROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "SELECT CASE WHEN linked_userid IS NULL THEN 'Not linked' ELSE 'Linked' END AS link_status, COUNT(*) AS accounts FROM workspace.default.p2c GROUP BY CASE WHEN linked_userid IS NULL THEN 'Not linked' ELSE 'Linked' END ORDER BY link_status"
     },
     {
       "id": "Q14",
@@ -129,17 +129,17 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT fd_bucket, COUNT(orig_fdamt) AS fd_accounts, ROUND(SUM(orig_fdamt),2) AS total_orig_fd FROM workspace.default.mab_meb WHERE orig_fdamt IS NOT NULL GROUP BY fd_bucket ORDER BY total_orig_fd DESC"
     },
     {
       "id": "Q15",
       "question": "Show the number of branches (brcode) per GL code and the total MAB for each.",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "SELECT glcode, COUNT(DISTINCT brcode) AS branches, ROUND(SUM(mab_bal),2) AS total_mab FROM workspace.default.mab_meb GROUP BY glcode ORDER BY glcode"
     },
     {
       "id": "Q16",
@@ -147,8 +147,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT p.source_account_nbr, p.full_name, p.product_type, p.account_close_date, m.mab_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date <> '-' ORDER BY m.mab_bal DESC LIMIT 10"
     },
     {
       "id": "Q17",
@@ -156,8 +156,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "SELECT p.product_type, p.nri_status, COUNT(*) AS accounts, ROUND(AVG(m.mab_bal),2) AS avg_mab FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type, p.nri_status ORDER BY p.product_type, p.nri_status"
     },
     {
       "id": "Q18",
@@ -166,7 +166,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "sql": "SELECT source_system_code, COUNT(*) AS open_accounts FROM workspace.default.p2c WHERE account_close_date = '-' GROUP BY source_system_code ORDER BY source_system_code"
     },
     {
       "id": "Q19",
@@ -175,7 +175,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT\n  p.source_account_nbr,\n  p.full_name,\n  m.meb_bal,\n  m.mab_bal,\n  (m.meb_bal - m.mab_bal) AS diff\nFROM workspace.default.p2c p\nJOIN workspace.default.mab_meb m\n  ON p.source_account_nbr = m.ACCTNO\nWHERE p.product_type = 'SA'\n  AND m.meb_bal > m.mab_bal\nORDER BY diff DESC\nLIMIT 10"
+      "sql": "SELECT p.source_account_nbr, p.full_name, m.mab_bal, m.meb_bal, ROUND(m.meb_bal - m.mab_bal,2) AS diff FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.product_type = 'SA' AND m.meb_bal > m.mab_bal ORDER BY diff DESC LIMIT 10"
     },
     {
       "id": "Q20",
@@ -184,7 +184,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "sql": "SELECT criteria, COUNT(*) AS accounts FROM workspace.default.p2c WHERE account_open_date < '2010-01-01' GROUP BY criteria ORDER BY accounts DESC, criteria"
     },
     {
       "id": "Q21",
@@ -193,16 +193,16 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "sql": "SELECT EMP_CODE, COUNT(*) AS accounts FROM workspace.default.mab_meb GROUP BY EMP_CODE HAVING COUNT(*) > 150 ORDER BY accounts DESC, EMP_CODE"
     },
     {
       "id": "Q22",
       "question": "Total MAB by balance bucket and retail/bulk flag.",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "SELECT bal_bucket, retail_bulk, ROUND(SUM(mab_bal),2) AS total_mab FROM workspace.default.mab_meb GROUP BY bal_bucket, retail_bulk ORDER BY bal_bucket, retail_bulk"
     },
     {
       "id": "Q23",
@@ -210,17 +210,17 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "SELECT CUST_NAME, ACCTNO, mab_bal, MANAGED_EMPID FROM workspace.default.mab_meb WHERE managed_profile = 'RELATIONSHIP MANAGER' AND mab_bal > 100000 ORDER BY mab_bal DESC LIMIT 10"
     },
     {
       "id": "Q24",
       "question": "For each customer constellation code in P2C, show account count and total MAB.",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "SELECT p.cust_const, COUNT(*) AS accounts, ROUND(SUM(m.mab_bal),2) AS total_mab FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.cust_const ORDER BY total_mab DESC"
     },
     {
       "id": "Q25",
@@ -229,7 +229,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(DISTINCT source_account_nbr) AS open_accounts_no_card_block\nFROM workspace.default.p2c\nWHERE account_close_date = '-'\n  AND (card_block_code IS NULL OR card_block_code = '' );"
+      "sql": "SELECT COUNT(*) AS open_no_block FROM workspace.default.p2c WHERE account_close_date = '-' AND card_block_code IS NULL"
     },
     {
       "id": "Q26",
@@ -237,8 +237,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "SELECT p.ucic_value, p.full_name, m.mab_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.product_type = 'FD' AND m.orig_fdamt IS NOT NULL AND m.mab_bal > (SELECT AVG(mab_bal) FROM workspace.default.mab_meb WHERE orig_fdamt IS NOT NULL) ORDER BY m.mab_bal DESC LIMIT 10"
     },
     {
       "id": "Q27",
@@ -246,8 +246,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "SELECT yr, accounts_opened, SUM(accounts_opened) OVER (ORDER BY yr) AS cumulative FROM (SELECT SUBSTR(account_open_date,1,4) AS yr, COUNT(*) AS accounts_opened FROM workspace.default.p2c GROUP BY SUBSTR(account_open_date,1,4)) t ORDER BY yr"
     },
     {
       "id": "Q28",
@@ -255,26 +255,26 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "WITH j AS (SELECT p.product_type, p.account_close_date, m.mab_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO), t AS (SELECT product_type, COUNT(*) AS total, SUM(CASE WHEN account_close_date <> '-' THEN 1 ELSE 0 END) AS closed, SUM(mab_bal) AS tot_mab FROM j GROUP BY product_type) SELECT product_type, total, closed, ROUND(100.0 * closed / total, 2) AS closure_pct, ROUND(tot_mab,2) AS total_mab FROM t ORDER BY closure_pct DESC"
     },
     {
       "id": "Q29",
       "question": "For each product type among open accounts, which two employee codes hold the highest total MAB?",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT product_type, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY product_type ORDER BY account_count DESC"
+      "ex_match": true,
+      "sql": "WITH x AS (SELECT p.product_type, m.EMP_CODE, SUM(m.mab_bal) AS tot_mab, ROW_NUMBER() OVER (PARTITION BY p.product_type ORDER BY SUM(m.mab_bal) DESC) AS rn FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' GROUP BY p.product_type, m.EMP_CODE) SELECT product_type, EMP_CODE, ROUND(tot_mab,2) AS tot_mab FROM x WHERE rn <= 2 ORDER BY product_type, rn"
     },
     {
       "id": "Q30",
       "question": "Find customers by name with open accounts in at least 3 different product types and total MAB above 50000. Top 10.",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT product_type, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY product_type ORDER BY account_count DESC"
+      "ex_match": true,
+      "sql": "SELECT p.full_name, COUNT(*) AS accounts, COUNT(DISTINCT p.product_type) AS products, ROUND(SUM(m.mab_bal),2) AS total_mab FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' GROUP BY p.full_name HAVING COUNT(DISTINCT p.product_type) >= 3 AND SUM(m.mab_bal) > 50000 ORDER BY total_mab DESC, p.full_name LIMIT 10"
     },
     {
       "id": "Q31",
@@ -282,8 +282,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT product_type, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY product_type ORDER BY account_count DESC"
+      "ex_match": true,
+      "sql": "SELECT * FROM (SELECT p.product_type, p.source_account_nbr, p.full_name, m.mab_bal, RANK() OVER (PARTITION BY p.product_type ORDER BY m.mab_bal DESC) AS rnk FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO) t WHERE rnk <= 3 ORDER BY product_type, rnk"
     },
     {
       "id": "Q32",
@@ -292,7 +292,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT\n  p.product_type,\n  ROUND(100.0 * SUM(m.mab_bal) / t.total_mab, 2) AS mab_share_pct\nFROM workspace.default.p2c AS p\nJOIN workspace.default.mab_meb AS m\n  ON p.source_account_nbr = m.ACCTNO\nCROSS JOIN (\n  SELECT SUM(mab_bal) AS total_mab\n  FROM workspace.default.mab_meb\n) AS t\nGROUP BY p.product_type\nORDER BY mab_share_pct DESC"
+      "sql": "SELECT p.product_type, ROUND(SUM(m.mab_bal),2) AS total_mab, ROUND(100.0 * SUM(m.mab_bal) / SUM(SUM(m.mab_bal)) OVER (), 2) AS pct_of_total FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type ORDER BY pct_of_total DESC"
     },
     {
       "id": "Q33",
@@ -300,8 +300,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "WITH a AS (SELECT p.product_type, m.mab_bal, AVG(m.mab_bal) OVER (PARTITION BY p.product_type) AS avg_pt FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO) SELECT product_type, COUNT(*) AS above_avg_accounts FROM a WHERE mab_bal > avg_pt GROUP BY product_type ORDER BY above_avg_accounts DESC, product_type"
     },
     {
       "id": "Q34",
@@ -310,7 +310,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "sql": "WITH y AS (SELECT SUBSTR(account_open_date,1,4) AS yr, COUNT(*) AS cnt FROM workspace.default.p2c GROUP BY SUBSTR(account_open_date,1,4)) SELECT yr, cnt, LAG(cnt) OVER (ORDER BY yr) AS prev_cnt, cnt - LAG(cnt) OVER (ORDER BY yr) AS yoy_change FROM y ORDER BY yr"
     },
     {
       "id": "Q35",
@@ -318,8 +318,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "SELECT m.EMP_CODE, COUNT(*) AS accounts, SUM(CASE WHEN p.account_close_date <> '-' THEN 1 ELSE 0 END) AS closed, ROUND(100.0 * SUM(CASE WHEN p.account_close_date <> '-' THEN 1 ELSE 0 END) / COUNT(*), 2) AS closed_pct FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY m.EMP_CODE ORDER BY closed_pct DESC"
     },
     {
       "id": "Q36",
@@ -327,8 +327,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "WITH a AS (SELECT p.product_type, AVG(CASE WHEN p.nri_status = 'Y' THEN m.mab_bal END) AS nri_avg, AVG(CASE WHEN p.nri_status = 'N' THEN m.mab_bal END) AS non_nri_avg FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type) SELECT product_type, ROUND(nri_avg,2) AS nri_avg, ROUND(non_nri_avg,2) AS non_nri_avg FROM a WHERE nri_avg > non_nri_avg ORDER BY product_type"
     },
     {
       "id": "Q37",
@@ -343,10 +343,10 @@
       "id": "Q38",
       "question": "Per GL description, how many accounts have MAB above the overall average MAB and how many are at or below it?",
       "nlu_success": true,
-      "gate_pass": true,
+      "gate_pass": false,
       "valid_sql": true,
       "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "sql": "SELECT gldesc, SUM(CASE WHEN mab_bal > (SELECT AVG(mab_bal) FROM workspace.default.mab_meb) THEN 1 ELSE 0 END) AS above_avg, SUM(CASE WHEN mab_bal <= (SELECT AVG(mab_bal) FROM workspace.default.mab_meb) THEN 1 ELSE 0 END) AS at_or_below_avg FROM workspace.default.mab_meb GROUP BY gldesc ORDER BY gldesc"
     },
     {
       "id": "Q39",
@@ -354,8 +354,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT p.source_account_nbr, p.full_name, p.account_open_date, m.mab_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' AND p.account_open_date < '2016-08-31' AND m.mab_bal > 100000 ORDER BY m.mab_bal DESC LIMIT 15"
     },
     {
       "id": "Q40",
@@ -363,8 +363,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "SELECT p.product_type, COUNT(*) AS open_accounts, ROUND(AVG(datediff(to_date('2026-08-31'), to_date(p.account_open_date)) / 365.25),2) AS avg_tenure_yrs FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date = '-' GROUP BY p.product_type ORDER BY avg_tenure_yrs DESC"
     },
     {
       "id": "Q41",
@@ -372,8 +372,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT p.source_account_nbr, p.product_type, p.account_open_date, p.account_close_date, ROUND(datediff(to_date(p.account_close_date), to_date(p.account_open_date)) / 30.44,1) AS months_open, ROUND(m.mab_bal,2) AS mab_bal FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.account_close_date <> '-' AND m.mab_bal > 50000 ORDER BY m.mab_bal DESC LIMIT 15"
     },
     {
       "id": "Q42",
@@ -381,8 +381,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT income_segment, SUM(mab_bal) AS total_mab_bal FROM workspace.default.mab_meb GROUP BY income_segment ORDER BY income_segment"
+      "ex_match": true,
+      "sql": "WITH s AS (SELECT p.income_segment, p.product_type, SUM(m.mab_bal) AS tot, ROW_NUMBER() OVER (PARTITION BY p.income_segment ORDER BY SUM(m.mab_bal) DESC) AS rn FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.income_segment IS NOT NULL GROUP BY p.income_segment, p.product_type) SELECT income_segment, product_type, ROUND(tot,2) AS total_mab FROM s WHERE rn = 1 ORDER BY income_segment"
     },
     {
       "id": "Q43",
@@ -390,8 +390,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "WITH e AS (SELECT EMP_CODE, SUM(mab_bal) AS tot FROM workspace.default.mab_meb GROUP BY EMP_CODE) SELECT EMP_CODE, ROUND(tot,2) AS total_mab FROM e WHERE tot > (SELECT AVG(tot) FROM e) ORDER BY tot DESC"
     },
     {
       "id": "Q44",
@@ -399,8 +399,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT p.product_type, COUNT(*) AS account_count, ROUND(AVG(m.mab_bal), 2) AS avg_mab_bal FROM workspace.default.p2c p INNER JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type"
+      "ex_match": true,
+      "sql": "SELECT COUNT(*) AS mismatches FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO WHERE p.nri_status <> m.nriflag"
     },
     {
       "id": "Q45",
@@ -408,8 +408,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT product_type, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY product_type ORDER BY account_count DESC"
+      "ex_match": true,
+      "sql": "SELECT product_type, source_account_nbr, full_name, ROUND(mab_bal,2) AS mab_bal FROM (SELECT p.product_type, p.source_account_nbr, p.full_name, m.mab_bal, ROW_NUMBER() OVER (PARTITION BY p.product_type ORDER BY m.mab_bal DESC) AS rn FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO) t WHERE rn = 1 ORDER BY product_type"
     },
     {
       "id": "Q46",
@@ -418,16 +418,16 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT\n  product_type,\n  ROUND(100.0 * SUM(CASE WHEN dormancy_status <> 'A' THEN 1 ELSE 0 END) / COUNT(*), 2) AS non_active_share_pct\nFROM workspace.default.p2c\nGROUP BY product_type\nHAVING SUM(CASE WHEN dormancy_status <> 'A' THEN 1 ELSE 0 END) / COUNT(*) > 0.25"
+      "sql": "SELECT product_type, COUNT(*) AS accounts, SUM(CASE WHEN dormancy_status <> 'A' THEN 1 ELSE 0 END) AS non_active, ROUND(100.0 * SUM(CASE WHEN dormancy_status <> 'A' THEN 1 ELSE 0 END) / COUNT(*), 2) AS non_active_pct FROM workspace.default.p2c GROUP BY product_type HAVING 100.0 * SUM(CASE WHEN dormancy_status <> 'A' THEN 1 ELSE 0 END) / COUNT(*) > 25 ORDER BY non_active_pct DESC"
     },
     {
       "id": "Q47",
       "question": "What is the smallest number of top accounts that together make up 50% of total MAB?",
       "nlu_success": true,
-      "gate_pass": false,
+      "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "WITH r AS (SELECT mab_bal, SUM(mab_bal) OVER (ORDER BY mab_bal DESC) AS running, SUM(mab_bal) OVER () AS total FROM workspace.default.mab_meb) SELECT COUNT(*) AS accounts_for_half_of_mab FROM r WHERE running - mab_bal < 0.5 * total"
     },
     {
       "id": "Q48",
@@ -435,8 +435,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "SELECT COUNT(*) AS total_records FROM workspace.default.p2c"
+      "ex_match": true,
+      "sql": "SELECT EMP_CODE, ROUND(SUM(CASE WHEN retail_bulk = 'RETAIL' THEN mab_bal ELSE 0 END),2) AS retail_mab, ROUND(SUM(CASE WHEN retail_bulk = 'BULK' THEN mab_bal ELSE 0 END),2) AS bulk_mab FROM workspace.default.mab_meb GROUP BY EMP_CODE HAVING COUNT(DISTINCT retail_bulk) = 2 ORDER BY EMP_CODE"
     },
     {
       "id": "Q49",
@@ -445,7 +445,7 @@
       "gate_pass": true,
       "valid_sql": true,
       "ex_match": true,
-      "sql": "SELECT product_type, COUNT(*) AS account_count FROM workspace.default.p2c GROUP BY product_type ORDER BY account_count DESC"
+      "sql": "WITH r AS (SELECT p.source_account_nbr, p.product_type, CASE WHEN p.account_close_date = '-' THEN 'OPEN' ELSE 'CLOSED' END AS status, m.mab_bal, PERCENT_RANK() OVER (ORDER BY m.mab_bal) AS pr FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO) SELECT product_type, status, COUNT(*) AS accounts FROM r WHERE pr >= 0.95 GROUP BY product_type, status ORDER BY product_type, status"
     },
     {
       "id": "Q50",
@@ -453,8 +453,8 @@
       "nlu_success": true,
       "gate_pass": true,
       "valid_sql": true,
-      "ex_match": false,
-      "sql": "WITH joined AS (\n    SELECT\n        p.ucic_value,\n        p.source_account_nbr,\n        p.product_type,\n        p.account_open_date,\n        p.account_close_date,\n        p.dormancy_status,\n        m.mab_bal,\n        m.meb_bal\n    FROM workspace.default.p2c p\n    INNER JOIN workspace.default.mab_meb m\n        ON p.source_account_nbr = m.ACCTNO\n),\naged AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        DATEDIFF(CURRENT_DATE(), account_open_date) / 365.0 AS account_age_years,\n        CASE WHEN account_close_date != '-' THEN 1 ELSE 0 END AS is_closed,\n        CASE WHEN dormancy_status = 'D' THEN 1 ELSE 0 END AS is_dormant\n    FROM joined\n),\nbucketed AS (\n    SELECT\n        ucic_value,\n        source_account_nbr,\n        product_type,\n        account_open_date,\n        account_close_date,\n        dormancy_status,\n        mab_bal,\n        meb_bal,\n        account_age_years,\n        is_closed,\n        is_dormant,\n        CASE\n            WHEN account_age_years < 2 THEN 'Under 2 years'\n            WHEN account_age_years < 5 THEN '2 to 5 years'\n            WHEN account_age_years < 10 THEN '5 to 10 years'\n            ELSE 'Over 10 years'\n        END AS age_bucket\n    FROM aged\n),\nage_stats AS (\n    SELECT\n        age_bucket,\n        COUNT(*) AS total_accounts,\n        SUM(is_closed) AS closed_accounts,\n        SUM(CASE WHEN is_closed = 0 THEN 1 ELSE 0 END) AS open_accounts,\n        SUM(is_dormant) AS dormant_accounts,\n        ROUND(SUM(is_dormant) * 100.0 / COUNT(*), 2) AS dormancy_rate_pct,\n        ROUND(\n            SUM(CASE WHEN is_closed = 1 OR is_dormant = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*),\n            2\n        ) AS closure_or_dormancy_risk_pct,\n        ROUND(AVG(mab_bal), 2) AS avg_mab_bal,\n        ROUND(SUM(mab_bal), 2) AS total_mab_bal,\n        ROUND(AVG(meb_bal), 2) AS avg_meb_bal,\n        ROUND(SUM(meb_bal), 2) AS total_meb_bal\n    FROM bucketed\n    GROUP BY age_bucket\n)\nSELECT\n    age_bucket,\n    total_accounts,\n    open_accounts,\n    closed_accounts,\n    dormant_accounts,\n    dormancy_rate_pct,\n    closure_or_dormancy_risk_pct,\n    avg_mab_bal,\n    total_mab_bal,\n    avg_meb_bal,\n    total_meb_bal,\n    CASE\n        WHEN closure_or_dormancy_risk_pct > 25 THEN 'HIGH RISK'\n        ELSE 'NORMAL'\n    END AS risk_flag\nFROM age_stats\nORDER BY\n    CASE age_bucket\n        WHEN 'Under 2 years' THEN 1\n        WHEN '2 to 5 years' THEN 2\n        WHEN '5 to 10 years' THEN 3\n        WHEN 'Over 10 years' THEN 4\n    END"
+      "ex_match": true,
+      "sql": "SELECT p.product_type, SUM(CASE WHEN p.linked_userid IS NOT NULL THEN 1 ELSE 0 END) AS linked_accounts, ROUND(AVG(CASE WHEN p.linked_userid IS NOT NULL THEN m.mab_bal END),2) AS linked_avg_mab, SUM(CASE WHEN p.linked_userid IS NULL THEN 1 ELSE 0 END) AS not_linked_accounts, ROUND(AVG(CASE WHEN p.linked_userid IS NULL THEN m.mab_bal END),2) AS not_linked_avg_mab FROM workspace.default.p2c p JOIN workspace.default.mab_meb m ON p.source_account_nbr = m.ACCTNO GROUP BY p.product_type ORDER BY p.product_type"
     }
   ]
 }

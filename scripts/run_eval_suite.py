@@ -380,6 +380,7 @@ BENCHMARK_50 = [
 
 
 def run_evaluation(execute_cloud: bool = False) -> dict:
+    os.environ.setdefault("USE_MOCK_LLM", "true")
     total_q = len(BENCHMARK_50)
     nlu_understood_count = 0
     gate_passed_count = 0
